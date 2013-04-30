@@ -1,6 +1,7 @@
 package student;
 
 import client.PlayerProtocol;
+import java.io.*;
 import java.util.*;
 import reversi.*;
 
@@ -12,13 +13,43 @@ public class vm090011r extends ReversiPlayer {
         private static final int MAXDEPTH = 6;
         private boolean firstMove = true;
         private boolean played = false;
+        private PrintWriter log;
         
 	@Override
 	public void init(Player player) {
 		_player = player;
 		_board = new Board();
+            try {
+                FileWriter fw = new FileWriter(new File("reversi.log"));
+                log = new PrintWriter(fw, true);
+            } catch (FileNotFoundException ex) {
+                System.out.println("Error opening log, no loging available.");
+            } catch (IOException ex) {
+                System.out.println("Error opening log, no loging available.");
+            }
 	}
-
+        
+        private void printBoard(Board board){
+            for(int i = 0; i < 8; ++i){
+                for(int j = 0; j < 8; ++j){
+                    Field f = null;
+                    try {
+                        f = board.getField(new Position(i,j));
+                        if(f.equals(Field.EMPTY))
+                            log.print(" .");
+                        else if(f.equals(Field.BLACK))
+                            log.print(" X");
+                        else
+                            log.print(" O");
+                    } catch (InvalidPositionException ex) {
+                        System.out.println(ex);
+                    }               
+                }
+                log.println();
+            }
+            log.println("------------------");
+        }    
+        
 	@Override
 	public Position getMove() {
             depth = 0;
@@ -29,6 +60,7 @@ public class vm090011r extends ReversiPlayer {
             if(firstMove && !played){
                 move = new Position(5,4);
             }else{
+                printBoard(_board);
                 List<Position> moves = _board.legalMoves(_player);
                 move = moves.get(_random.nextInt(moves.size()));
                 depth++;
@@ -63,6 +95,7 @@ public class vm090011r extends ReversiPlayer {
             _board.makeMove(_player, move);
             return move;
 	}
+        
         private int calculateMove(Player player, Board board) {
             
             int min = 65;
