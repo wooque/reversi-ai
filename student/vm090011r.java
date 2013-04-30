@@ -6,19 +6,26 @@ import java.util.*;
 import reversi.*;
 
 public class vm090011r extends ReversiPlayer {
+    
 	private final Random _random = new Random();
 	private Player _player;
 	private Board _board;
+        
         private int depth;
-        private static final int MAXDEPTH = 6;
+        private static final int MAXDEPTH = 2;
+        
         private boolean firstMove = true;
         private boolean played = false;
+        
         private PrintWriter log;
+        private String ident = "";
         
 	@Override
 	public void init(Player player) {
-		_player = player;
-		_board = new Board();
+            
+            _player = player;
+            _board = new Board();
+            
             try {
                 FileWriter fw = new FileWriter(new File("reversi.log"));
                 log = new PrintWriter(fw, true);
@@ -30,8 +37,12 @@ public class vm090011r extends ReversiPlayer {
 	}
         
         private void printBoard(Board board){
+            
             for(int i = 0; i < 8; ++i){
+                
+                log.print(ident);
                 for(int j = 0; j < 8; ++j){
+                    
                     Field f = null;
                     try {
                         f = board.getField(new Position(i,j));
@@ -47,34 +58,43 @@ public class vm090011r extends ReversiPlayer {
                 }
                 log.println();
             }
-            log.println("------------------");
+            log.println(ident + "------------------");
         }    
         
 	@Override
 	public Position getMove() {
+            
             depth = 0;
             int max = -1;
             int moveValue = 0;
             Position move = null;
             
+            printBoard(_board);
+            
             if(firstMove && !played){
                 move = new Position(5,4);
-            }else{
-                printBoard(_board);
+                
+            }else{ 
                 List<Position> moves = _board.legalMoves(_player);
                 move = moves.get(_random.nextInt(moves.size()));
+                
                 depth++;
+                ident+="  ";
+                
                 for(Position curr: moves){
                     Board newBoard = new Board();
+                    
                     for(int i = 0; i<8; ++i){
                         for(int j = 0; j<8; ++j){
                             if((i==3 && j==3)||(i==3 && j==4)||(i==4 && j==3)||(i==4 && j==4)) continue;
+                            
                             Position currPosition = new Position(i, j);
                             try {
-                                if(_board.getField(currPosition).equals(_player)){
+                                Field currField = _board.getField(currPosition);
+                                if(currField.equals(_player)){
                                     newBoard.makeMove(_player, currPosition);
                                 }
-                                else if(_board.getField(currPosition).equals(_player.opponent())){
+                                else if(currField.equals(_player.opponent())){
                                     newBoard.makeMove(_player.opponent(), currPosition);
                                 }
                             } catch (InvalidPositionException ex) {
@@ -83,16 +103,21 @@ public class vm090011r extends ReversiPlayer {
                         }
                     }
                     newBoard.makeMove(_player, curr);
+                    printBoard(newBoard);
                     moveValue = calculateMove(_player.opponent(), newBoard);
+
                     if(moveValue > max){
                         max = moveValue;
                         move = curr;
                     }
                 }
                 depth--;
+                ident = ident.substring(0, ident.length()-2);
             }
             firstMove = false;
             _board.makeMove(_player, move);
+            log.println("me:");
+            printBoard(_board);
             return move;
 	}
         
@@ -104,23 +129,26 @@ public class vm090011r extends ReversiPlayer {
             
             if(depth == MAXDEPTH){
                 int score = 0;
-                for(int i = 0; i<8; ++i){
+                for(int i = 0 ; i<8; ++i){
                     for(int j = 0; j<8; ++j){
-                        if((i==3 && j==3)||(i==3 && j==4)||(i==4 && j==3)||(i==4 && j==4)) continue;
-                        Position currPosition = new Position(i, j);
                         try {
-                            if(board.getField(currPosition).equals(player)){
+                            Field f = board.getField(new Position(i, j));
+                            if(f.equals(player)){
                                 score++;
                             }
-                            else if(board.getField(currPosition).equals(player.opponent())){
+                            else if(f.equals(player.opponent())){
                                 score--;
                             }
-                        } catch (InvalidPositionException ex) {
+                        }catch(InvalidPositionException ex){
                             System.out.println(ex);
                         }
                     }
                 }
                 moveValue = score;
+                
+                printBoard(board);
+                log.println(ident + "value: " + score);
+                
                 if(_player.equals(player)){
                     if(moveValue > max)
                         max = moveValue;
@@ -128,20 +156,27 @@ public class vm090011r extends ReversiPlayer {
                     if(moveValue < min)
                         min = moveValue;
                 }
+                
             }else{
                 depth++;
+                ident+="  ";
+                
                 List<Position> moves = board.legalMoves(player);
+                
                 for(Position curr: moves){
                     Board newBoard = new Board();
+                    
                     for(int i = 0; i<8; ++i){
                         for(int j = 0; j<8; ++j){
                             if((i==3 && j==3)||(i==3 && j==4)||(i==4 && j==3)||(i==4 && j==4)) continue;
+                            
                             Position currPosition = new Position(i, j);
                             try {
-                                if(board.getField(currPosition).equals(player)){
+                                Field currField = board.getField(currPosition);
+                                if(currField.equals(player)){
                                     newBoard.makeMove(player, currPosition);
                                 }
-                                else if(board.getField(currPosition).equals(player.opponent())){
+                                else if(currField.equals(player.opponent())){
                                     newBoard.makeMove(player.opponent(), currPosition);
                                 }
                             } catch (InvalidPositionException ex) {
@@ -150,6 +185,7 @@ public class vm090011r extends ReversiPlayer {
                         }
                     }
                     newBoard.makeMove(player, curr);
+                    printBoard(newBoard);
                     moveValue = calculateMove(player.opponent(), newBoard);
                     if(_player.equals(player)){
                         if(moveValue > max)
@@ -160,6 +196,7 @@ public class vm090011r extends ReversiPlayer {
                     }
                 }
                 depth--;
+                ident = ident.substring(0, ident.length()-2);
             } 
            
             if(_player.equals(player)){
@@ -172,9 +209,12 @@ public class vm090011r extends ReversiPlayer {
 	@Override
 	public void opponentsMove(Position position) {
 		_board.makeMove(_player.opponent(), position);
+                
                 if(firstMove)
                     played=true;
-                    
+                
+                log.println("enemy:");
+                printBoard(_board);
 	}
         
 	public static void main(String[] args) {
