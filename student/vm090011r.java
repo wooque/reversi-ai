@@ -14,6 +14,8 @@ public class vm090011r extends ReversiPlayer {
     private boolean firstMove = true;
     private boolean played = false;
     private Log log;
+    private ArrayList<Position> allMoves;
+    private ArrayList<Player> playersOrder;
 
     @Override
     public void init(Player player) {
@@ -21,6 +23,8 @@ public class vm090011r extends ReversiPlayer {
         _player = player;
         _board = new Board();
         log = new Log("reversi.log");
+        allMoves = new ArrayList<Position>();
+        playersOrder = new ArrayList<Player>();
     }
 
     @Override
@@ -31,6 +35,7 @@ public class vm090011r extends ReversiPlayer {
         int moveValue;
         Position move;
 
+        log.println("board:");
         log.printBoard(_board);
 
         if (firstMove && !played) {
@@ -44,7 +49,7 @@ public class vm090011r extends ReversiPlayer {
             log.levelUp();
 
             for (Position curr : moves) {
-                Board newBoard = BoardUtil.copyBoard(_board, _player);
+                Board newBoard = BoardUtil.copyBoard(allMoves, playersOrder);
                 newBoard.makeMove(_player, curr);
                 log.printBoard(newBoard);
                 moveValue = calculateMove(_player.opponent(), newBoard);
@@ -59,7 +64,11 @@ public class vm090011r extends ReversiPlayer {
         }
         firstMove = false;
         _board.makeMove(_player, move);
-        log.println("me:");
+        
+        allMoves.add(move);
+        playersOrder.add(_player);
+        
+        log.println("me played:");
         log.printBoard(_board);
         return move;
     }
@@ -93,7 +102,7 @@ public class vm090011r extends ReversiPlayer {
             List<Position> moves = board.legalMoves(player);
 
             for (Position curr : moves) {
-                Board newBoard = BoardUtil.copyBoard(board, player);
+                Board newBoard = BoardUtil.copyBoard(allMoves, playersOrder);
                 newBoard.makeMove(player, curr);
                 log.printBoard(newBoard);
                 moveValue = calculateMove(player.opponent(), newBoard);
@@ -119,9 +128,11 @@ public class vm090011r extends ReversiPlayer {
     }
 
     @Override
-    public void opponentsMove(Position position) {
+    public void opponentsMove(Position position) {     
         _board.makeMove(_player.opponent(), position);
-
+        allMoves.add(position);
+        playersOrder.add(_player.opponent());
+        
         if (firstMove) {
             played = true;
         }

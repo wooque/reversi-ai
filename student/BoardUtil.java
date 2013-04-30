@@ -1,25 +1,14 @@
 package student;
 
+import java.util.ArrayList;
 import reversi.*;
 
 public class BoardUtil {
     
-    public static Board copyBoard(Board board, Player player) {
+    public static Board copyBoard(ArrayList<Position> allMoves, ArrayList<Player> players) {
         Board newBoard = new Board();
-        for (int i = 0; i < 8; ++i) {
-            for (int j = 0; j < 8; ++j) {
-                Position currPosition = new Position(i, j);
-                try {
-                    Field currField = board.getField(currPosition);
-                    if (currField.equals(player)) {
-                        newBoard.makeMove(player, currPosition);
-                    } else if (currField.equals(player.opponent())) {
-                        newBoard.makeMove(player.opponent(), currPosition);
-                    }
-                } catch (InvalidPositionException ex) {
-                    System.out.println(ex);
-                }
-            }
+        for (int i = 0; i < allMoves.size(); ++i) {
+            newBoard.makeMove(players.get(i), allMoves.get(i));
         }
         return newBoard;
     }
