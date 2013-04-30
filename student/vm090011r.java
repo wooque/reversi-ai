@@ -10,10 +10,10 @@ public class vm090011r extends ReversiPlayer {
     private Player _player;
     private Board _board;
     private int depth;
-    private static final int MAXDEPTH = 2;
+    private static final int MAXDEPTH = 5;
     private boolean firstMove = true;
     private boolean played = false;
-    private Log log;
+    //private Log log;
     private ArrayList<Position> allMoves;
     private ArrayList<Player> playersOrder;
 
@@ -22,9 +22,9 @@ public class vm090011r extends ReversiPlayer {
 
         _player = player;
         _board = new Board();
-        log = new Log("reversi.log");
-        allMoves = new ArrayList<Position>();
-        playersOrder = new ArrayList<Player>();
+        //log = new Log("reversi.log");
+        allMoves = new ArrayList<>();
+        playersOrder = new ArrayList<>();
     }
 
     @Override
@@ -35,8 +35,8 @@ public class vm090011r extends ReversiPlayer {
         int moveValue;
         Position move;
 
-        log.println("board:");
-        log.printBoard(_board);
+        //log.println("board:");
+        //log.printBoard(_board);
 
         if (firstMove && !played) {
             move = new Position(5, 4);
@@ -46,12 +46,16 @@ public class vm090011r extends ReversiPlayer {
             move = moves.get(_random.nextInt(moves.size()));
 
             depth++;
-            log.levelUp();
+            //log.levelUp();
 
             for (Position curr : moves) {
-                Board newBoard = BoardUtil.copyBoard(allMoves, playersOrder);
+                //log.println("orig: ");
+                //log.printBoard(_board);
+                Board newBoard = BoardUtil.makeBoard(allMoves, playersOrder);
+                //log.println("copy: ");
+                //log.printBoard(newBoard);
                 newBoard.makeMove(_player, curr);
-                log.printBoard(newBoard);
+                //log.printBoard(newBoard);
                 moveValue = calculateMove(_player.opponent(), newBoard);
 
                 if (moveValue > max) {
@@ -60,7 +64,7 @@ public class vm090011r extends ReversiPlayer {
                 }
             }
             depth--;
-            log.levelDown();
+            //log.levelDown();
         }
         firstMove = false;
         _board.makeMove(_player, move);
@@ -68,8 +72,8 @@ public class vm090011r extends ReversiPlayer {
         allMoves.add(move);
         playersOrder.add(_player);
         
-        log.println("me played:");
-        log.printBoard(_board);
+        //log.println("me played:");
+        //log.printBoard(_board);
         return move;
     }
 
@@ -82,8 +86,8 @@ public class vm090011r extends ReversiPlayer {
         if (depth == MAXDEPTH) {
             moveValue = BoardUtil.calculateBoardValue(board, player);
 
-            log.printBoard(board);
-            log.println("value: " + moveValue);
+            //log.printBoard(board);
+            //log.println("value: " + moveValue);
 
             if (_player.equals(player)) {
                 if (moveValue > max) {
@@ -97,14 +101,14 @@ public class vm090011r extends ReversiPlayer {
 
         } else {
             depth++;
-            log.levelUp();
+            //log.levelUp();
 
             List<Position> moves = board.legalMoves(player);
 
             for (Position curr : moves) {
-                Board newBoard = BoardUtil.copyBoard(allMoves, playersOrder);
+                Board newBoard = BoardUtil.makeBoard(allMoves, playersOrder);
                 newBoard.makeMove(player, curr);
-                log.printBoard(newBoard);
+                //log.printBoard(newBoard);
                 moveValue = calculateMove(player.opponent(), newBoard);
                 if (_player.equals(player)) {
                     if (moveValue > max) {
@@ -117,7 +121,7 @@ public class vm090011r extends ReversiPlayer {
                 }
             }
             depth--;
-            log.levelDown();
+            //log.levelDown();
         }
 
         if (_player.equals(player)) {
@@ -137,8 +141,8 @@ public class vm090011r extends ReversiPlayer {
             played = true;
         }
 
-        log.println("enemy:");
-        log.printBoard(_board);
+        //log.println("enemy:");
+        //log.printBoard(_board);
     }
 
     public static void main(String[] args) {

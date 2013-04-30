@@ -5,7 +5,7 @@ import reversi.*;
 
 public class BoardUtil {
     
-    public static Board copyBoard(ArrayList<Position> allMoves, ArrayList<Player> players) {
+    public static Board makeBoard(ArrayList<Position> allMoves, ArrayList<Player> players) {
         Board newBoard = new Board();
         for (int i = 0; i < allMoves.size(); ++i) {
             newBoard.makeMove(players.get(i), allMoves.get(i));
@@ -19,9 +19,9 @@ public class BoardUtil {
             for (int j = 0; j < 8; ++j) {
                 try {
                     Field f = board.getField(new Position(i, j));
-                    if (f.equals(player)) {
+                    if (BoardUtil.equals(f,player)) {
                         value++;
-                    } else if (f.equals(player.opponent())) {
+                    } else if (BoardUtil.equals(f, player.opponent())) {
                         value--;
                     }
                 } catch (InvalidPositionException ex) {
@@ -30,5 +30,14 @@ public class BoardUtil {
             }
         }
         return value;
-    }   
+    }
+    
+    public static boolean equals(Field f, Player p){
+        if(f == Field.BLACK && p == Player.BLACK)
+            return true;
+        else if(f == Field.WHITE && p == Player.WHITE)
+            return true;
+        else
+            return false;
+    }
 }
