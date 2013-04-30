@@ -1,7 +1,6 @@
 package student;
 
 import client.PlayerProtocol;
-import java.io.*;
 import java.util.*;
 import reversi.*;
 
@@ -14,91 +13,14 @@ public class vm090011r extends ReversiPlayer {
     private static final int MAXDEPTH = 2;
     private boolean firstMove = true;
     private boolean played = false;
-    private PrintWriter log;
-    private String ident = "";
+    private Log log;
 
     @Override
     public void init(Player player) {
 
         _player = player;
         _board = new Board();
-
-        try {
-            FileWriter fw = new FileWriter(new File("reversi.log"));
-            log = new PrintWriter(fw, true);
-        } catch (FileNotFoundException ex) {
-            System.out.println("Error opening log, no loging available.");
-        } catch (IOException ex) {
-            System.out.println("Error opening log, no loging available.");
-        }
-    }
-
-    private Board copyBoard(Board board, Player player) {
-        Board newBoard = new Board();
-        for (int i = 0; i < 8; ++i) {
-            for (int j = 0; j < 8; ++j) {
-                if ((i == 3 && j == 3) || (i == 3 && j == 4) || (i == 4 && j == 3) || (i == 4 && j == 4)) {
-                    continue;
-                }
-                Position currPosition = new Position(i, j);
-                try {
-                    Field currField = board.getField(currPosition);
-                    if (currField.equals(player)) {
-                        newBoard.makeMove(player, currPosition);
-                    } else if (currField.equals(player.opponent())) {
-                        newBoard.makeMove(player.opponent(), currPosition);
-                    }
-                } catch (InvalidPositionException ex) {
-                    System.out.println(ex);
-                }
-            }
-        }
-        return newBoard;
-    }
-    
-    private void printBoard(Board board) {
-
-        for (int i = 0; i < 8; ++i) {
-
-            log.print(ident);
-            for (int j = 0; j < 8; ++j) {
-
-                Field f = null;
-                try {
-                    f = board.getField(new Position(i, j));
-                    if (f.equals(Field.EMPTY)) {
-                        log.print(" .");
-                    } else if (f.equals(Field.BLACK)) {
-                        log.print(" X");
-                    } else {
-                        log.print(" O");
-                    }
-                } catch (InvalidPositionException ex) {
-                    System.out.println(ex);
-                }
-            }
-            log.println();
-        }
-        log.println(ident + "------------------");
-    }
-    
-    private int calculateBoardValue(Board board, Player player) {
-        int value = 0;
-        for (int i = 0; i < 8; ++i) {
-            for (int j = 0; j < 8; ++j) {
-                try {
-                    Field f = board.getField(new Position(i, j));
-                    if (f.equals(player)) {
-                        value++;
-                    } else if (f.equals(player.opponent())) {
-                        value--;
-                    }
-                } catch (InvalidPositionException ex) {
-                    System.out.println(ex);
-                }
-            }
-        }
-        return value;
+        log = new Log("reversi.log");
     }
 
     @Override
@@ -106,10 +28,10 @@ public class vm090011r extends ReversiPlayer {
 
         depth = 0;
         int max = -1;
-        int moveValue = 0;
-        Position move = null;
+        int moveValue;
+        Position move;
 
-        printBoard(_board);
+        log.printBoard(_board);
 
         if (firstMove && !played) {
             move = new Position(5, 4);
@@ -119,12 +41,12 @@ public class vm090011r extends ReversiPlayer {
             move = moves.get(_random.nextInt(moves.size()));
 
             depth++;
-            ident += "  ";
+            log.levelUp();
 
             for (Position curr : moves) {
-                Board newBoard = copyBoard(_board, _player);
+                Board newBoard = BoardUtil.copyBoard(_board, _player);
                 newBoard.makeMove(_player, curr);
-                printBoard(newBoard);
+                log.printBoard(newBoard);
                 moveValue = calculateMove(_player.opponent(), newBoard);
 
                 if (moveValue > max) {
@@ -133,12 +55,12 @@ public class vm090011r extends ReversiPlayer {
                 }
             }
             depth--;
-            ident = ident.substring(0, ident.length() - 2);
+            log.levelDown();
         }
         firstMove = false;
         _board.makeMove(_player, move);
         log.println("me:");
-        printBoard(_board);
+        log.printBoard(_board);
         return move;
     }
 
@@ -149,10 +71,10 @@ public class vm090011r extends ReversiPlayer {
         int moveValue;
 
         if (depth == MAXDEPTH) {
-            moveValue = calculateBoardValue(board, player);
+            moveValue = BoardUtil.calculateBoardValue(board, player);
 
-            printBoard(board);
-            log.println(ident + "value: " + moveValue);
+            log.printBoard(board);
+            log.println("value: " + moveValue);
 
             if (_player.equals(player)) {
                 if (moveValue > max) {
@@ -166,14 +88,14 @@ public class vm090011r extends ReversiPlayer {
 
         } else {
             depth++;
-            ident += "  ";
+            log.levelUp();
 
             List<Position> moves = board.legalMoves(player);
 
             for (Position curr : moves) {
-                Board newBoard = copyBoard(board, player);
+                Board newBoard = BoardUtil.copyBoard(board, player);
                 newBoard.makeMove(player, curr);
-                printBoard(newBoard);
+                log.printBoard(newBoard);
                 moveValue = calculateMove(player.opponent(), newBoard);
                 if (_player.equals(player)) {
                     if (moveValue > max) {
@@ -186,7 +108,7 @@ public class vm090011r extends ReversiPlayer {
                 }
             }
             depth--;
-            ident = ident.substring(0, ident.length() - 2);
+            log.levelDown();
         }
 
         if (_player.equals(player)) {
@@ -205,7 +127,7 @@ public class vm090011r extends ReversiPlayer {
         }
 
         log.println("enemy:");
-        printBoard(_board);
+        log.printBoard(_board);
     }
 
     public static void main(String[] args) {
