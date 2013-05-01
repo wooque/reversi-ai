@@ -20,11 +20,11 @@ public class Log {
     }
     
     public void levelUp(){
-        ident+="  ";
+        ident+="  |";
     }
     
     public void levelDown(){
-        ident = ident.substring(0, ident.length() - 2);
+        ident = ident.substring(0, ident.length() - 3);
     }
     
     public void println(String s){

@@ -19,7 +19,7 @@ public class BoardUtil {
             for (int j = 0; j < 8; ++j) {
                 try {
                     Field f = board.getField(new Position(i, j));
-                    if (BoardUtil.equals(f,player)) {
+                    if (BoardUtil.equals(f, player)) {
                         value++;
                     } else if (BoardUtil.equals(f, player.opponent())) {
                         value--;
