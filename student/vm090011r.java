@@ -10,12 +10,10 @@ public class vm090011r extends ReversiPlayer {
     private Player _player;
     private Board _board;
     private int depth;
-    private static final int MAXDEPTH = 4;
+    private static final int MAXDEPTH = 5;
     private boolean firstMove = true;
     private boolean played = false;
     //private Log log;
-    private ArrayList<Position> allMoves;
-    private ArrayList<Player> playersOrder;
 
     @Override
     public void init(Player player) {
@@ -23,8 +21,6 @@ public class vm090011r extends ReversiPlayer {
         _player = player;
         _board = new Board();
         //log = new Log("reversi.log");
-        allMoves = new ArrayList<>();
-        playersOrder = new ArrayList<>();
     }
 
     @Override
@@ -48,15 +44,11 @@ public class vm090011r extends ReversiPlayer {
             depth++;
             //log.levelUp();
 
-            for (Position curr : moves) {
-                Board newBoard = BoardUtil.makeBoard(allMoves, playersOrder); 
+            for (Position curr : moves) { 
+                Board newBoard = _board.clone();
                 newBoard.makeMove(_player, curr);
-                ArrayList<Position> newAllMoves = (ArrayList<Position>)allMoves.clone();
-                newAllMoves.add(curr);
-                ArrayList<Player> newPlayersOrder = (ArrayList<Player>)playersOrder.clone();
-                newPlayersOrder.add(_player);
                 //log.printBoard(newBoard);
-                moveValue = calculateMove(_player.opponent(), newBoard, newAllMoves, newPlayersOrder);
+                moveValue = calculateMove(_player.opponent(), newBoard);
 
                 if (moveValue > max) {
                     max = moveValue;
@@ -69,16 +61,13 @@ public class vm090011r extends ReversiPlayer {
         firstMove = false;
         _board.makeMove(_player, move);
         
-        allMoves.add(move);
-        playersOrder.add(_player);
-        
         //log.println("max: " + max);
         //log.println("me played:");
         //log.printBoard(_board);
         return move;
     }
 
-    private int calculateMove(Player player, Board board, ArrayList<Position> allMoves, ArrayList<Player> playersOrder) {
+    private int calculateMove(Player player, Board board) {
 
         int min = 65;
         int max = -65;
@@ -98,14 +87,10 @@ public class vm090011r extends ReversiPlayer {
             List<Position> moves = board.legalMoves(player);
 
             for (Position curr : moves) {
-                Board newBoard = BoardUtil.makeBoard(allMoves, playersOrder);
+                Board newBoard = board.clone();
                 newBoard.makeMove(player, curr);
-                ArrayList<Position> newAllMoves = (ArrayList<Position>)allMoves.clone();
-                newAllMoves.add(curr);
-                ArrayList<Player> newPlayersOrder = (ArrayList<Player>)playersOrder.clone();
-                newPlayersOrder.add(player);
                 //log.printBoard(newBoard);
-                moveValue = calculateMove(player.opponent(), newBoard, newAllMoves, newPlayersOrder);
+                moveValue = calculateMove(player.opponent(), newBoard);
                 if (_player.equals(player)) {
                     if (moveValue > max) {
                         max = moveValue;
@@ -133,8 +118,6 @@ public class vm090011r extends ReversiPlayer {
         //log.println("board: ");
         //log.printBoard(_board);
         _board.makeMove(_player.opponent(), position);
-        allMoves.add(position);
-        playersOrder.add(_player.opponent());
         
         if (firstMove) {
             played = true;

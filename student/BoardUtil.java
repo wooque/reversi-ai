@@ -1,17 +1,8 @@
 package student;
 
-import java.util.ArrayList;
 import reversi.*;
 
 public class BoardUtil {
-    
-    public static Board makeBoard(ArrayList<Position> allMoves, ArrayList<Player> players) {
-        Board newBoard = new Board();
-        for (int i = 0; i < allMoves.size(); ++i) {
-            newBoard.makeMove(players.get(i), allMoves.get(i));
-        }
-        return newBoard;
-    }
     
     public static int calculateBoardValue(Board board, Player player) {
         int value = 0;
