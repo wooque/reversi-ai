@@ -4,7 +4,7 @@ import client.PlayerProtocol;
 import java.util.*;
 import reversi.*;
 
-public class vm090011r extends ReversiPlayer {
+public class SimpleReversiPlayer extends ReversiPlayer {
 
     private final Random _random = new Random();
     private Player _player;
@@ -128,7 +128,7 @@ public class vm090011r extends ReversiPlayer {
     }
 
     public static void main(String[] args) {
-        PlayerProtocol player = new ReversiPlayerProtocol(new vm090011r());
+        PlayerProtocol player = new ReversiPlayerProtocol(new SimpleReversiPlayer());
         player.gameStart();
     }
 }
