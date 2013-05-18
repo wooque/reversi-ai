@@ -10,13 +10,15 @@ public class MyReversiPlayer extends ReversiPlayer {
     private final Random _random = new Random();
     private Player _player;
     private Board _board;
-    private int depth;
-    private static final int MAXDEPTH = 4;
+    //private int depth;
+    //private static final int MAXDEPTH = 4;
     //private Log log;
     private int timeout;
-    private Node lastCompleteLevel;
-    private Node currentLevel;
+    private LinkedList<Node> lastCompleteLevel = new LinkedList<>();
+    private LinkedList<Node> currentLevel = new LinkedList<>();
+    private Player currPlayer;
     private int expandedLevel;
+    private boolean end;
 
     @Override
     public void init(Player player) {
@@ -53,11 +55,29 @@ public class MyReversiPlayer extends ReversiPlayer {
         }
     }
 
+    public void end() {
+        end = true;
+    }
+
     @Override
     public Position getMove() {
 
-        depth = 0;
+        end = false;
+        
+        // TODO: consider using one Timer thread
+        new Thread() {
+            @Override
+            public void run() {
+                try {
+                    sleep(timeout);
+                } catch (InterruptedException ex) {}
+                end();
+            }
+        };
+        
+        //depth = 0;
         int max = -65;
+        int min;
         int moveValue;
         Position move;
 
@@ -67,21 +87,51 @@ public class MyReversiPlayer extends ReversiPlayer {
         List<Position> moves = _board.legalMoves(_player);
         move = moves.get(_random.nextInt(moves.size()));
 
-        depth++;
+        //depth++;
         //log.levelUp();
 
         for (Position curr : moves) {
             Board newBoard = _board.clone();
             newBoard.makeMove(_player, curr);
+            Node node = new Node(newBoard);
+            currentLevel.add(node);
+            moveValue = BoardUtil.calculateBoardValue(node.getBoard(), _player);
             //log.printBoard(newBoard);
-            moveValue = calculateMove(_player.opponent(), newBoard);
+            //moveValue = calculateMove(_player.opponent(), newBoard);
 
             if (moveValue > max) {
                 max = moveValue;
                 move = curr;
             }
         }
-        depth--;
+        
+        lastCompleteLevel = currentLevel;
+        currentLevel.clear();
+        currPlayer = _player.opponent();
+        max = -65;
+        min = 65;
+        for(Node node: lastCompleteLevel){
+            Board board = node.getBoard();
+            List<Position> legalMoves = board.legalMoves(currPlayer);
+            
+            for(Position pos: legalMoves){
+                Board newBoard = board.clone();
+                newBoard.makeMove(currPlayer, pos);
+                Node newNode = new Node(newBoard);
+                currentLevel.add(newNode);
+                moveValue = BoardUtil.calculateBoardValue(newBoard, currPlayer);
+                if(currPlayer == _player){
+                    if(moveValue > max){
+                        max = moveValue;
+                    }
+                } else {
+                    if(moveValue < min){
+                        min = moveValue;
+                    }    
+                }
+            }
+        }
+        //depth--;
         //log.levelDown();
 
         _board.makeMove(_player, move);
@@ -92,51 +142,51 @@ public class MyReversiPlayer extends ReversiPlayer {
         return move;
     }
 
-    private int calculateMove(Player player, Board board) {
-
-        int min = 65;
-        int max = -65;
-        int moveValue;
-
-        if (depth == MAXDEPTH) {
-            moveValue = BoardUtil.calculateBoardValue(board, _player);
-
-            //log.println("value: " + moveValue);
-
-            return moveValue;
-
-        } else {
-            depth++;
-            //log.levelUp();
-
-            List<Position> moves = board.legalMoves(player);
-
-            for (Position curr : moves) {
-                Board newBoard = board.clone();
-                newBoard.makeMove(player, curr);
-                //log.printBoard(newBoard);
-                moveValue = calculateMove(player.opponent(), newBoard);
-                if (_player.equals(player)) {
-                    if (moveValue > max) {
-                        max = moveValue;
-                    }
-                } else {
-                    if (moveValue < min) {
-                        min = moveValue;
-                    }
-                }
-            }
-            depth--;
-            //log.levelDown();
-            if (_player.equals(player)) {
-                //log.println("max: " + max);
-                return max;
-            } else {
-                //log.println("min: " + min);
-                return min;
-            }
-        }
-    }
+//    private int calculateMove(Player player, Board board) {
+//
+//        int min = 65;
+//        int max = -65;
+//        int moveValue;
+//
+//        if (depth == MAXDEPTH) {
+//            moveValue = BoardUtil.calculateBoardValue(board, _player);
+//
+//            //log.println("value: " + moveValue);
+//
+//            return moveValue;
+//
+//        } else {
+//            depth++;
+//            //log.levelUp();
+//
+//            List<Position> moves = board.legalMoves(player);
+//
+//            for (Position curr : moves) {
+//                Board newBoard = board.clone();
+//                newBoard.makeMove(player, curr);
+//                //log.printBoard(newBoard);
+//                moveValue = calculateMove(player.opponent(), newBoard);
+//                if (_player.equals(player)) {
+//                    if (moveValue > max) {
+//                        max = moveValue;
+//                    }
+//                } else {
+//                    if (moveValue < min) {
+//                        min = moveValue;
+//                    }
+//                }
+//            }
+//            depth--;
+//            //log.levelDown();
+//            if (_player.equals(player)) {
+//                //log.println("max: " + max);
+//                return max;
+//            } else {
+//                //log.println("min: " + min);
+//                return min;
+//            }
+//        }
+//    }
 
     @Override
     public void opponentsMove(Position position) {

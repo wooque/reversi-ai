@@ -3,7 +3,7 @@ package student;
 import reversi.Board;
 
 public class Node {
-        
+
     private Board board;
     private Node children;
     private Node next;
