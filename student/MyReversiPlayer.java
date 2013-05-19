@@ -14,8 +14,8 @@ public class MyReversiPlayer extends ReversiPlayer {
     //private static final int MAXDEPTH = 4;
     //private Log log;
     private int timeout;
-    private LinkedList<Node> lastCompleteLevel = new LinkedList<>();
-    private LinkedList<Node> currentLevel = new LinkedList<>();
+    private ListOfNodes lastCompleteLevel = new ListOfNodes();
+    private ListOfNodes currentLevel = new ListOfNodes();
     private Player currPlayer;
     private int expandedLevel;
     private boolean end;
@@ -93,9 +93,8 @@ public class MyReversiPlayer extends ReversiPlayer {
         for (Position curr : moves) {
             Board newBoard = _board.clone();
             newBoard.makeMove(_player, curr);
-            Node node = new Node(newBoard);
-            currentLevel.add(node);
-            moveValue = BoardUtil.calculateBoardValue(node.getBoard(), _player);
+            currentLevel.addNode(newBoard);
+            moveValue = BoardUtil.calculateBoardValue(newBoard, _player);
             //log.printBoard(newBoard);
             //moveValue = calculateMove(_player.opponent(), newBoard);
 
@@ -106,7 +105,7 @@ public class MyReversiPlayer extends ReversiPlayer {
         }
         
         lastCompleteLevel = currentLevel;
-        currentLevel.clear();
+        currentLevel.setFirst(null);
         currPlayer = _player.opponent();
         max = -65;
         min = 65;
@@ -117,8 +116,7 @@ public class MyReversiPlayer extends ReversiPlayer {
             for(Position pos: legalMoves){
                 Board newBoard = board.clone();
                 newBoard.makeMove(currPlayer, pos);
-                Node newNode = new Node(newBoard);
-                currentLevel.add(newNode);
+                currentLevel.addNode(newBoard);
                 moveValue = BoardUtil.calculateBoardValue(newBoard, currPlayer);
                 if(currPlayer == _player){
                     if(moveValue > max){
