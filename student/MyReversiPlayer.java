@@ -76,17 +76,19 @@ public class MyReversiPlayer extends ReversiPlayer {
         int max = -65;
         int moveValue;
         Position move;
-
+        
         List<Position> moves = _board.legalMoves(_player);
         //move = moves.get(_random.nextInt(moves.size()));
-
-        for (Position curr : moves) {
-            Board newBoard = _board.clone();
-            newBoard.makeMove(_player, curr);
-            legalMoves.addNode(newBoard);
+        
+        if(legalMoves.isEmpty()){
+            for (Position currMove : moves) {
+                Board newBoard = _board.clone();
+                newBoard.makeMove(_player, currMove);
+                legalMoves.addNode(newBoard, currMove);
+            }
+            lastCompleteLevel = legalMoves;
         }
         
-        lastCompleteLevel = legalMoves;
         currPlayer = _player.opponent();
 
         while(!end){
@@ -97,8 +99,11 @@ public class MyReversiPlayer extends ReversiPlayer {
                 for(Position pos: currLegalMoves){
                     Board newBoard = board.clone();
                     newBoard.makeMove(currPlayer, pos);
-                    node.addChildren(newBoard);
+                    node.addChildren(newBoard, pos);
                     if (end) {
+                        // TODO: temporary we are clearing children because of consistency,
+                        // in future expanding decision tree should be continued
+                        node.clearChildren();
                         break;
                     }
                 }
@@ -115,14 +120,19 @@ public class MyReversiPlayer extends ReversiPlayer {
         }
         int i = 0;
         int bestMove = 0;
+        Node bestNode = null;
         for(Node node: legalMoves){
             moveValue = calculateValue(_player, node);
             if(moveValue > max){
                 max = moveValue;
                 bestMove = i;
+                bestNode = node;
             }
             i++;
         }
+        
+        if(bestNode != null)
+            legalMoves = bestNode.getChildren();
         
         move = moves.get(bestMove);
         
@@ -162,6 +172,18 @@ public class MyReversiPlayer extends ReversiPlayer {
     public void opponentsMove(Position position) {
         
         _board.makeMove(_player.opponent(), position);
+        for(Node node: legalMoves){
+            if(node.getMove() == position){
+                legalMoves = node.getChildren();
+                Node curr = legalMoves.getFirst().getChildren().getFirst();
+                Node prev = null;
+                while(curr != null){
+                    prev = curr;
+                    curr = curr.getChildren().getFirst();
+                }
+                lastCompleteLevel.setFirst(prev);
+            }
+        }  
     }
 
     public static void main(String[] args) {

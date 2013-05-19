@@ -1,15 +1,17 @@
 package student;
 
-import reversi.Board;
+import reversi.*;
 
 public class Node {
 
     private Board board;
+    private Position move;
     private ListOfNodes children;
     private Node next;
 
-    public Node(Board board) {
+    public Node(Board board, Position move) {
         this.board = board;
+        this.move = move;
         children = new ListOfNodes();
     }
 
@@ -29,7 +31,15 @@ public class Node {
         return children;
     }
 
-    public void addChildren(Board board) {
-        children.addNode(board);
+    public void addChildren(Board board, Position move) {
+        children.addNode(board, move);
+    }
+    
+    public void clearChildren(){
+        children.clear();
+    }
+
+    public Position getMove() {
+        return move;
     }
 }

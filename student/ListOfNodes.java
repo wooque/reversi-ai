@@ -1,14 +1,14 @@
 package student;
 
 import java.util.Iterator;
-import reversi.Board;
+import reversi.*;
 
 public class ListOfNodes implements Iterable<Node>{
     
     private Node first, last;
     
-    public void addNode(Board board){
-        Node node = new Node(board);
+    public void addNode(Board board, Position move){
+        Node node = new Node(board, move);
         if(first == null){
             first = node;
         }
@@ -18,6 +18,13 @@ public class ListOfNodes implements Iterable<Node>{
     
     public Node getFirst(){
         return first;
+    }
+    
+    public void setFirst(Node node){
+        first = node;
+        if(first == null){
+            last = null;
+        }
     }
     
     public boolean isEmpty(){
