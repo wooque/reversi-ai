@@ -69,7 +69,7 @@ public class MyReversiPlayer extends ReversiPlayer {
         }
         
         // TODO: consider using one Timer thread
-        new Thread() {
+        Thread timer = new Thread() {
             @Override
             public void run() {
                 try {
@@ -78,6 +78,7 @@ public class MyReversiPlayer extends ReversiPlayer {
                 end();
             }
         };
+        timer.start();
         
         int max = -65;
         int moveValue;
