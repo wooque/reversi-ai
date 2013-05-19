@@ -12,8 +12,9 @@ public class ListOfNodes implements Iterable<Node>{
         if(first == null){
             first = node;
         }
+        if(last != null)
+            last.setNext(node); 
         last = node;
-        last.setNext(node); 
     }
     
     public Node getFirst(){
@@ -36,6 +37,7 @@ public class ListOfNodes implements Iterable<Node>{
     }
     
     public void appendList(ListOfNodes list){
+        if(list == null) return;
         if(last != null){
             last.setNext(list.first);
         }

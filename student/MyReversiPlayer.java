@@ -45,7 +45,7 @@ public class MyReversiPlayer extends ReversiPlayer {
                     }
                     line = new StringTokenizer(config.readLine(), "=");
                 }
-                timeout = (int) (timeout * 0.1);
+                timeout = (int) (timeout * 0.33);
                 config.close();
             } catch (IOException ioe) {
                 System.out.println("ERROR!!! Config file corupted.");
@@ -53,14 +53,20 @@ public class MyReversiPlayer extends ReversiPlayer {
         }
     }
 
-    public void end() {
+    public synchronized void end() {
         end = true;
+    }
+    
+    public synchronized boolean isEnd(){
+        return end;
     }
 
     @Override
     public Position getMove() {
 
-        end = false;
+        synchronized(this){
+            end = false;
+        }
         
         // TODO: consider using one Timer thread
         new Thread() {
@@ -87,11 +93,10 @@ public class MyReversiPlayer extends ReversiPlayer {
                 legalMoves.addNode(newBoard, currMove);
             }
             lastCompleteLevel = legalMoves;
+            currPlayer = _player.opponent();
         }
-        
-        currPlayer = _player.opponent();
 
-        while(!end){
+        while(!isEnd()){
             for(Node node: lastCompleteLevel){
                 Board board = node.getBoard();
                 List<Position> currLegalMoves = board.legalMoves(currPlayer);
@@ -100,7 +105,7 @@ public class MyReversiPlayer extends ReversiPlayer {
                     Board newBoard = board.clone();
                     newBoard.makeMove(currPlayer, pos);
                     node.addChildren(newBoard, pos);
-                    if (end) {
+                    if (isEnd()){
                         // TODO: temporary we are clearing children because of consistency,
                         // in future expanding decision tree should be continued
                         node.clearChildren();
@@ -108,15 +113,15 @@ public class MyReversiPlayer extends ReversiPlayer {
                     }
                 }
                 currentLevel.appendList(node.getChildren());
-                if(end){
+                if(isEnd()){
                     break;
                 }
             }
-            if(!end){
+            if(!isEnd()){
                 lastCompleteLevel = currentLevel;
-                currentLevel.clear();
                 currPlayer = currPlayer.opponent();
             }
+            currentLevel.clear();    
         }
         int i = 0;
         int bestMove = 0;
@@ -143,7 +148,7 @@ public class MyReversiPlayer extends ReversiPlayer {
 
     private int calculateValue(Player player, Node node){
         if(node.getChildren().isEmpty()){
-            return BoardUtil.calculateBoardValue(node.getBoard(), currPlayer);
+            return BoardUtil.calculateBoardValue(node.getBoard(), player);
         } else {
             int max = -65;
             int min = 65;
