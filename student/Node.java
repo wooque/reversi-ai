@@ -1,18 +1,19 @@
 package student;
 
+import java.util.LinkedList;
 import reversi.*;
 
 public class Node {
 
     private Board board;
     private Position move;
-    private ListOfNodes children;
+    private LinkedList<Node> children;
     private Node next;
 
     public Node(Board board, Position move) {
         this.board = board;
         this.move = move;
-        children = new ListOfNodes();
+        children = new LinkedList<>();
     }
 
     public Node getNext() {
@@ -27,12 +28,12 @@ public class Node {
         return board;
     }
 
-    public ListOfNodes getChildren() {
+    public LinkedList<Node> getChildren() {
         return children;
     }
 
     public void addChildren(Board board, Position move) {
-        children.addNode(board, move);
+        children.add(new Node(board, move));
     }
     
     public void clearChildren(){

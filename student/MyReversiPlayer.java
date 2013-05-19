@@ -12,9 +12,9 @@ public class MyReversiPlayer extends ReversiPlayer {
     private Board _board;
     private Log log;
     private int timeout;
-    private ListOfNodes legalMoves = new ListOfNodes();
-    private ListOfNodes lastCompleteLevel = new ListOfNodes();
-    private ListOfNodes currentLevel = new ListOfNodes();
+    private LinkedList<Node> legalMoves = new LinkedList<>();
+    private LinkedList<Node> lastCompleteLevel = new LinkedList<>();
+    private LinkedList<Node> currentLevel = new LinkedList<>();
     private Player currPlayer;
     private boolean end;
     private int level;
@@ -92,7 +92,7 @@ public class MyReversiPlayer extends ReversiPlayer {
             for (Position currMove : moves) {
                 Board newBoard = _board.clone();
                 newBoard.makeMove(_player, currMove);
-                legalMoves.addNode(newBoard, currMove);
+                legalMoves.add(new Node(newBoard, currMove));
             }
             lastCompleteLevel = legalMoves;
             currPlayer = _player.opponent();
@@ -114,7 +114,7 @@ public class MyReversiPlayer extends ReversiPlayer {
                         break;
                     }
                 }
-                currentLevel.appendList(node.getChildren());
+                currentLevel.addAll(node.getChildren());
                 if(isEnd()){
                     break;
                 }
@@ -185,13 +185,19 @@ public class MyReversiPlayer extends ReversiPlayer {
             for(Node node: legalMoves){
                 if(node.getMove() == position){
                     legalMoves = node.getChildren();
-                    Node curr = legalMoves.getFirst().getChildren().getFirst();
-                    Node prev = null;
-                    while(curr != null){
-                        prev = curr;
-                        curr = curr.getChildren().getFirst();
+                    Node firstCurr = legalMoves.getFirst().getChildren().getFirst();
+                    Node firstPrev = null;
+                    Node lastCurr = legalMoves.getLast().getChildren().getLast();
+                    Node lastPrev = null;
+                    while(firstCurr != null){
+                        firstPrev = firstCurr;
+                        lastPrev = lastCurr;
+                        firstCurr = firstCurr.getChildren().getFirst();
+                        lastCurr = lastCurr.getChildren().getLast();
                     }
-                    lastCompleteLevel.setFirst(prev);
+                    int first = lastCompleteLevel.indexOf(firstPrev);
+                    int last = lastCompleteLevel.indexOf(lastPrev);
+                    lastCompleteLevel = (LinkedList<Node>) lastCompleteLevel.subList(first, last);
                 }
             }  
         }
