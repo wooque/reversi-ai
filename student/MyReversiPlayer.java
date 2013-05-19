@@ -14,7 +14,9 @@ public class MyReversiPlayer extends ReversiPlayer {
     private int timeout;
     private LinkedList<Node> legalMoves = new LinkedList<>();
     private LinkedList<Node> lastCompleteLevel = new LinkedList<>();
+    private int lastCompleteLevelDepth;
     private LinkedList<Node> currentLevel = new LinkedList<>();
+    private int currentLevelDepth;
     private Player currPlayer;
     private boolean end;
     private int level;
@@ -103,15 +105,13 @@ public class MyReversiPlayer extends ReversiPlayer {
             for(Node node: lastCompleteLevel){
                 Board board = node.getBoard();
                 List<Position> currLegalMoves = board.legalMoves(currPlayer);
-
+                currentLevelDepth++;
+                
                 for(Position pos: currLegalMoves){
                     Board newBoard = board.clone();
                     newBoard.makeMove(currPlayer, pos);
                     node.addChildren(newBoard, pos);
                     if (isEnd()){
-                        // TODO: temporary we are clearing children because of consistency,
-                        // in future expanding decision tree should be continued
-                        node.clearChildren();
                         break;
                     }
                 }
@@ -122,10 +122,11 @@ public class MyReversiPlayer extends ReversiPlayer {
             }
             if(!isEnd()){
                 lastCompleteLevel = currentLevel;
+                lastCompleteLevelDepth++;
+                currentLevel = new LinkedList<>();
                 currPlayer = currPlayer.opponent();
                 level++;
-            }
-            currentLevel = new LinkedList<>();    
+            }      
         }
         log.println("depth: "+level);
         int i = 0;
@@ -141,8 +142,11 @@ public class MyReversiPlayer extends ReversiPlayer {
             i++;
         }
         
-        if(bestNode != null)
+        if(bestNode != null){
             legalMoves = bestNode.getChildren();
+            lastCompleteLevelDepth--;
+            currentLevelDepth--;
+        }
         
         move = moves.get(bestMove);
         
@@ -187,11 +191,14 @@ public class MyReversiPlayer extends ReversiPlayer {
             for(Node node: legalMoves){
                 if(BoardUtil.equals(node.getMove(), position)){
                     legalMoves = node.getChildren();
+                    currentLevelDepth--;
+                    lastCompleteLevelDepth--;
                     Node firstCurr = legalMoves.getFirst().getChildren().getFirst();
                     Node firstPrev = null;
                     Node lastCurr = legalMoves.getLast().getChildren().getLast();
                     Node lastPrev = null;
-                    while(firstCurr != null && lastCurr != null){
+                    int depth = lastCompleteLevelDepth;
+                    while(firstCurr != null && lastCurr != null && depth!=0){
                         firstPrev = firstCurr;
                         lastPrev = lastCurr;
                         try{
@@ -201,6 +208,7 @@ public class MyReversiPlayer extends ReversiPlayer {
                             firstCurr = null;
                             lastCurr = null;
                         }
+                        depth--;
                     }
                     int first = lastCompleteLevel.indexOf(firstPrev);
                     int last = lastCompleteLevel.indexOf(lastPrev);
