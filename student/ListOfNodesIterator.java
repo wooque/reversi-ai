@@ -14,7 +14,7 @@ class ListOfNodesIterator implements Iterator<Node> {
 
     @Override
     public boolean hasNext() {
-        return (currNode != list.getLast());
+        return (list.getLast() != null ? (currNode != list.getLast().getNext()) : false);
     }
 
     @Override

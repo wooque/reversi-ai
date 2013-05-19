@@ -1,6 +1,6 @@
 package student;
 
-import java.util.Iterator;
+import java.util.*;
 import reversi.*;
 
 public class ListOfNodes implements Iterable<Node>{
