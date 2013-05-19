@@ -10,13 +10,14 @@ public class MyReversiPlayer extends ReversiPlayer {
     //private final Random _random = new Random();
     private Player _player;
     private Board _board;
-    //private Log log;
+    private Log log;
     private int timeout;
     private ListOfNodes legalMoves = new ListOfNodes();
     private ListOfNodes lastCompleteLevel = new ListOfNodes();
     private ListOfNodes currentLevel = new ListOfNodes();
     private Player currPlayer;
     private boolean end;
+    private int level;
 
     @Override
     public void init(Player player) {
@@ -24,7 +25,7 @@ public class MyReversiPlayer extends ReversiPlayer {
         _player = player;
         _board = new Board();
 
-        //log = new Log("reversi.log");
+        log = new Log("reversi.log");
 
         FileReader configFile = null;
         try {
@@ -96,7 +97,7 @@ public class MyReversiPlayer extends ReversiPlayer {
             lastCompleteLevel = legalMoves;
             currPlayer = _player.opponent();
         }
-
+        level = 0;
         while(!isEnd()){
             for(Node node: lastCompleteLevel){
                 Board board = node.getBoard();
@@ -121,9 +122,11 @@ public class MyReversiPlayer extends ReversiPlayer {
             if(!isEnd()){
                 lastCompleteLevel = currentLevel;
                 currPlayer = currPlayer.opponent();
+                level++;
             }
             currentLevel.clear();    
         }
+        log.println(""+level);
         int i = 0;
         int bestMove = 0;
         Node bestNode = null;
