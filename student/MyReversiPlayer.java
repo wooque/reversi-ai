@@ -46,7 +46,7 @@ public class MyReversiPlayer extends ReversiPlayer {
                     }
                     line = new StringTokenizer(config.readLine(), "=");
                 }
-                timeout = (int) (timeout * 0.5);
+                timeout = (int) (timeout * 0.2);
                 config.close();
             } catch (IOException ioe) {
                 System.out.println("ERROR!!! Config file corupted.");
@@ -99,6 +99,7 @@ public class MyReversiPlayer extends ReversiPlayer {
         }
         level = 0;
         while(!isEnd()){
+            log.println("lastLevel: "+lastCompleteLevel.size());
             for(Node node: lastCompleteLevel){
                 Board board = node.getBoard();
                 List<Position> currLegalMoves = board.legalMoves(currPlayer);
@@ -124,9 +125,9 @@ public class MyReversiPlayer extends ReversiPlayer {
                 currPlayer = currPlayer.opponent();
                 level++;
             }
-            currentLevel.clear();    
+            currentLevel = new LinkedList<>();    
         }
-        log.println(""+level);
+        log.println("depth: "+level);
         int i = 0;
         int bestMove = 0;
         Node bestNode = null;
@@ -181,23 +182,31 @@ public class MyReversiPlayer extends ReversiPlayer {
     public void opponentsMove(Position position) {
         
         _board.makeMove(_player.opponent(), position);
+        log.println("legal: "+ legalMoves.size());
         if(!legalMoves.isEmpty()){
             for(Node node: legalMoves){
-                if(node.getMove() == position){
+                if(BoardUtil.equals(node.getMove(), position)){
                     legalMoves = node.getChildren();
                     Node firstCurr = legalMoves.getFirst().getChildren().getFirst();
                     Node firstPrev = null;
                     Node lastCurr = legalMoves.getLast().getChildren().getLast();
                     Node lastPrev = null;
-                    while(firstCurr != null){
+                    while(firstCurr != null && lastCurr != null){
                         firstPrev = firstCurr;
                         lastPrev = lastCurr;
-                        firstCurr = firstCurr.getChildren().getFirst();
-                        lastCurr = lastCurr.getChildren().getLast();
+                        try{
+                            firstCurr = firstCurr.getChildren().getFirst();
+                            lastCurr = lastCurr.getChildren().getLast();
+                        } catch(NoSuchElementException nsee) {
+                            firstCurr = null;
+                            lastCurr = null;
+                        }
                     }
                     int first = lastCompleteLevel.indexOf(firstPrev);
                     int last = lastCompleteLevel.indexOf(lastPrev);
-                    lastCompleteLevel = (LinkedList<Node>) lastCompleteLevel.subList(first, last);
+                    log.println("first: " + first + " last: " + last);
+                    lastCompleteLevel = new LinkedList<>(lastCompleteLevel.subList(first, last));
+                    log.println("cut: "+lastCompleteLevel.size());
                 }
             }  
         }
