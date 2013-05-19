@@ -12,13 +12,14 @@ class ListOfNodesIterator implements Iterator<Node> {
 
     @Override
     public boolean hasNext() {
-        return (currNode.getNext() != null);
+        return (currNode != null);
     }
 
     @Override
     public Node next() {
+        Node returnNode = currNode;
         currNode = currNode.getNext();
-        return currNode;
+        return returnNode;
     }
 
     @Override
