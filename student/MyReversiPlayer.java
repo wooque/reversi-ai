@@ -45,7 +45,7 @@ public class MyReversiPlayer extends ReversiPlayer {
                     }
                     line = new StringTokenizer(config.readLine(), "=");
                 }
-                timeout = (int) (timeout / 2);
+                timeout = (int) (timeout * 0.1);
                 config.close();
             } catch (IOException ioe) {
                 System.out.println("ERROR!!! Config file corupted.");
@@ -172,18 +172,20 @@ public class MyReversiPlayer extends ReversiPlayer {
     public void opponentsMove(Position position) {
         
         _board.makeMove(_player.opponent(), position);
-        for(Node node: legalMoves){
-            if(node.getMove() == position){
-                legalMoves = node.getChildren();
-                Node curr = legalMoves.getFirst().getChildren().getFirst();
-                Node prev = null;
-                while(curr != null){
-                    prev = curr;
-                    curr = curr.getChildren().getFirst();
+        if(!legalMoves.isEmpty()){
+            for(Node node: legalMoves){
+                if(node.getMove() == position){
+                    legalMoves = node.getChildren();
+                    Node curr = legalMoves.getFirst().getChildren().getFirst();
+                    Node prev = null;
+                    while(curr != null){
+                        prev = curr;
+                        curr = curr.getChildren().getFirst();
+                    }
+                    lastCompleteLevel.setFirst(prev);
                 }
-                lastCompleteLevel.setFirst(prev);
-            }
-        }  
+            }  
+        }
     }
 
     public static void main(String[] args) {

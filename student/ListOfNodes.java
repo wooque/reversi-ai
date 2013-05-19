@@ -28,7 +28,7 @@ public class ListOfNodes implements Iterable<Node>{
     }
     
     public boolean isEmpty(){
-        return (first != null);
+        return (first == null);
     }
     
     public void clear(){
@@ -36,10 +36,12 @@ public class ListOfNodes implements Iterable<Node>{
     }
     
     public void appendList(ListOfNodes list){
-        last.setNext(list.first);
+        if(last != null){
+            last.setNext(list.first);
+        }
         last = list.last;
         if(first == null){
-            first = last;
+            first = list.first;
         }
     }
 
