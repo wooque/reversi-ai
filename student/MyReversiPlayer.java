@@ -10,14 +10,11 @@ public class MyReversiPlayer extends ReversiPlayer {
     private final Random _random = new Random();
     private Player _player;
     private Board _board;
-    //private int depth;
-    //private static final int MAXDEPTH = 4;
     //private Log log;
     private int timeout;
     private ListOfNodes lastCompleteLevel = new ListOfNodes();
     private ListOfNodes currentLevel = new ListOfNodes();
     private Player currPlayer;
-    private int expandedLevel;
     private boolean end;
 
     @Override
@@ -75,28 +72,19 @@ public class MyReversiPlayer extends ReversiPlayer {
             }
         };
         
-        //depth = 0;
         int max = -65;
         int min;
         int moveValue;
         Position move;
 
-        //log.println("board:");
-        //log.printBoard(_board);
-
         List<Position> moves = _board.legalMoves(_player);
         move = moves.get(_random.nextInt(moves.size()));
-
-        //depth++;
-        //log.levelUp();
 
         for (Position curr : moves) {
             Board newBoard = _board.clone();
             newBoard.makeMove(_player, curr);
             currentLevel.addNode(newBoard);
             moveValue = BoardUtil.calculateBoardValue(newBoard, _player);
-            //log.printBoard(newBoard);
-            //moveValue = calculateMove(_player.opponent(), newBoard);
 
             if (moveValue > max) {
                 max = moveValue;
@@ -116,7 +104,7 @@ public class MyReversiPlayer extends ReversiPlayer {
             for(Position pos: legalMoves){
                 Board newBoard = board.clone();
                 newBoard.makeMove(currPlayer, pos);
-                currentLevel.addNode(newBoard);
+                node.addChildren(newBoard);
                 moveValue = BoardUtil.calculateBoardValue(newBoard, currPlayer);
                 if(currPlayer == _player){
                     if(moveValue > max){
@@ -128,73 +116,18 @@ public class MyReversiPlayer extends ReversiPlayer {
                     }    
                 }
             }
+            currentLevel.appendList(node.getChildren());
         }
-        //depth--;
-        //log.levelDown();
 
         _board.makeMove(_player, move);
 
-        //log.println("max: " + max);
-        //log.println("me played:");
-        //log.printBoard(_board);
         return move;
     }
 
-//    private int calculateMove(Player player, Board board) {
-//
-//        int min = 65;
-//        int max = -65;
-//        int moveValue;
-//
-//        if (depth == MAXDEPTH) {
-//            moveValue = BoardUtil.calculateBoardValue(board, _player);
-//
-//            //log.println("value: " + moveValue);
-//
-//            return moveValue;
-//
-//        } else {
-//            depth++;
-//            //log.levelUp();
-//
-//            List<Position> moves = board.legalMoves(player);
-//
-//            for (Position curr : moves) {
-//                Board newBoard = board.clone();
-//                newBoard.makeMove(player, curr);
-//                //log.printBoard(newBoard);
-//                moveValue = calculateMove(player.opponent(), newBoard);
-//                if (_player.equals(player)) {
-//                    if (moveValue > max) {
-//                        max = moveValue;
-//                    }
-//                } else {
-//                    if (moveValue < min) {
-//                        min = moveValue;
-//                    }
-//                }
-//            }
-//            depth--;
-//            //log.levelDown();
-//            if (_player.equals(player)) {
-//                //log.println("max: " + max);
-//                return max;
-//            } else {
-//                //log.println("min: " + min);
-//                return min;
-//            }
-//        }
-//    }
-
     @Override
     public void opponentsMove(Position position) {
-        //log.println("board: ");
-        //log.printBoard(_board);
-
+        
         _board.makeMove(_player.opponent(), position);
-
-        //log.println("enemy played:");
-        //log.printBoard(_board);
     }
 
     public static void main(String[] args) {

@@ -5,19 +5,12 @@ import reversi.Board;
 public class Node {
 
     private Board board;
-    private Node children;
+    private ListOfNodes children;
     private Node next;
 
-    public Node(Board board){
+    public Node(Board board) {
         this.board = board;
-    }
-
-    public Node getChildren() {
-        return children;
-    }
-
-    public void setChildren(Node children) {
-        this.children = children;
+        children = new ListOfNodes();
     }
 
     public Node getNext() {
@@ -26,9 +19,17 @@ public class Node {
 
     public void setNext(Node next) {
         this.next = next;
-    }   
+    }
 
     public Board getBoard() {
         return board;
+    }
+
+    public ListOfNodes getChildren() {
+        return children;
+    }
+
+    public void addChildren(Board board) {
+        children.addNode(board);
     }
 }

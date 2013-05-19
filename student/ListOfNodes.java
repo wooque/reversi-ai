@@ -20,6 +20,22 @@ public class ListOfNodes implements Iterable<Node>{
             last = null;
         }
     }
+    
+    public Node getFirst(){
+        return first;
+    }
+    
+    public Node getLast(){
+        return last;
+    }
+    
+    public void appendList(ListOfNodes list){
+        last.setNext(list.getFirst());
+        last = list.getLast();
+        if(first == null){
+            first = last;
+        }
+    }
 
     @Override
     public Iterator<Node> iterator() {
