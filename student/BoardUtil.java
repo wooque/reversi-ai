@@ -31,4 +31,8 @@ public class BoardUtil {
         else
             return false;
     }
+    
+    public static boolean equals(Position first, Position second){
+        return (first.getX() == second.getX() && first.getY() == second.getY());
+    }
 }
