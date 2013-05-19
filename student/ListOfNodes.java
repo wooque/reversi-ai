@@ -4,6 +4,7 @@ import java.util.Iterator;
 import reversi.Board;
 
 public class ListOfNodes implements Iterable<Node>{
+    
     private Node first, last;
     
     public void addNode(Board board){
@@ -14,24 +15,22 @@ public class ListOfNodes implements Iterable<Node>{
         last = node;
         last.setNext(node); 
     }
-    public void setFirst(Node node){
-        first = node;
-        if(node == null){
-            last = null;
-        }
-    }
     
     public Node getFirst(){
         return first;
     }
     
-    public Node getLast(){
-        return last;
+    public boolean isEmpty(){
+        return (first != null);
+    }
+    
+    public void clear(){
+        first = last = null;
     }
     
     public void appendList(ListOfNodes list){
-        last.setNext(list.getFirst());
-        last = list.getLast();
+        last.setNext(list.first);
+        last = list.last;
         if(first == null){
             first = last;
         }

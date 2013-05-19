@@ -4,11 +4,10 @@ import java.util.Iterator;
 
 class ListOfNodesIterator implements Iterator<Node> {
     
-    private ListOfNodes list;
     private Node currNode;
 
     public ListOfNodesIterator(ListOfNodes list) {
-        this.list = list;
+        currNode = list.getFirst();
     }
 
     @Override

@@ -7,11 +7,12 @@ import reversi.*;
 
 public class MyReversiPlayer extends ReversiPlayer {
 
-    private final Random _random = new Random();
+    //private final Random _random = new Random();
     private Player _player;
     private Board _board;
     //private Log log;
     private int timeout;
+    private ListOfNodes legalMoves = new ListOfNodes();
     private ListOfNodes lastCompleteLevel = new ListOfNodes();
     private ListOfNodes currentLevel = new ListOfNodes();
     private Player currPlayer;
@@ -44,7 +45,7 @@ public class MyReversiPlayer extends ReversiPlayer {
                     }
                     line = new StringTokenizer(config.readLine(), "=");
                 }
-                timeout = (int) (timeout * 0.985);
+                timeout = (int) (timeout / 2);
                 config.close();
             } catch (IOException ioe) {
                 System.out.println("ERROR!!! Config file corupted.");
@@ -73,57 +74,90 @@ public class MyReversiPlayer extends ReversiPlayer {
         };
         
         int max = -65;
-        int min;
         int moveValue;
         Position move;
 
         List<Position> moves = _board.legalMoves(_player);
-        move = moves.get(_random.nextInt(moves.size()));
+        //move = moves.get(_random.nextInt(moves.size()));
 
         for (Position curr : moves) {
             Board newBoard = _board.clone();
             newBoard.makeMove(_player, curr);
-            currentLevel.addNode(newBoard);
-            moveValue = BoardUtil.calculateBoardValue(newBoard, _player);
-
-            if (moveValue > max) {
-                max = moveValue;
-                move = curr;
-            }
+            legalMoves.addNode(newBoard);
         }
         
-        lastCompleteLevel = currentLevel;
-        currentLevel.setFirst(null);
+        lastCompleteLevel = legalMoves;
         currPlayer = _player.opponent();
-        max = -65;
-        min = 65;
-        for(Node node: lastCompleteLevel){
-            Board board = node.getBoard();
-            List<Position> legalMoves = board.legalMoves(currPlayer);
-            
-            for(Position pos: legalMoves){
-                Board newBoard = board.clone();
-                newBoard.makeMove(currPlayer, pos);
-                node.addChildren(newBoard);
-                moveValue = BoardUtil.calculateBoardValue(newBoard, currPlayer);
-                if(currPlayer == _player){
-                    if(moveValue > max){
-                        max = moveValue;
+
+        while(!end){
+            for(Node node: lastCompleteLevel){
+                Board board = node.getBoard();
+                List<Position> currLegalMoves = board.legalMoves(currPlayer);
+
+                for(Position pos: currLegalMoves){
+                    Board newBoard = board.clone();
+                    newBoard.makeMove(currPlayer, pos);
+                    node.addChildren(newBoard);
+                    if (end) {
+                        break;
                     }
-                } else {
-                    if(moveValue < min){
-                        min = moveValue;
-                    }    
+                }
+                currentLevel.appendList(node.getChildren());
+                if(end){
+                    break;
                 }
             }
-            currentLevel.appendList(node.getChildren());
+            if(!end){
+                lastCompleteLevel = currentLevel;
+                currentLevel.clear();
+                currPlayer = currPlayer.opponent();
+            }
         }
-
+        int i = 0;
+        int bestMove = 0;
+        for(Node node: legalMoves){
+            moveValue = calculateValue(_player, node);
+            if(moveValue > max){
+                max = moveValue;
+                bestMove = i;
+            }
+            i++;
+        }
+        
+        move = moves.get(bestMove);
+        
         _board.makeMove(_player, move);
 
         return move;
     }
 
+    private int calculateValue(Player player, Node node){
+        if(node.getChildren().isEmpty()){
+            return BoardUtil.calculateBoardValue(node.getBoard(), currPlayer);
+        } else {
+            int max = -65;
+            int min = 65;
+            int value;
+            for(Node children: node.getChildren()){
+                value = calculateValue(player.opponent(), children);
+                if(player == _player){
+                    if(value > max){
+                        max = value;
+                    }
+                } else {
+                    if(value < min){
+                        min = value;
+                    }
+                }
+            }
+            if (player == _player) {
+                return max;
+            } else {
+                return min;
+            }
+        }
+    }
+    
     @Override
     public void opponentsMove(Position position) {
         
