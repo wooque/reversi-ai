@@ -5,14 +5,16 @@ import java.util.Iterator;
 class ListOfNodesIterator implements Iterator<Node> {
     
     private Node currNode;
+    private ListOfNodes list;
 
     public ListOfNodesIterator(ListOfNodes list) {
+        this.list = list;
         currNode = list.getFirst();
     }
 
     @Override
     public boolean hasNext() {
-        return (currNode != null);
+        return (currNode != list.getLast());
     }
 
     @Override

@@ -28,6 +28,10 @@ public class ListOfNodes implements Iterable<Node>{
         }
     }
     
+    Node getLast() {
+        return last;
+    }
+    
     public boolean isEmpty(){
         return (first == null);
     }

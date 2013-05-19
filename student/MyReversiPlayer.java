@@ -45,7 +45,7 @@ public class MyReversiPlayer extends ReversiPlayer {
                     }
                     line = new StringTokenizer(config.readLine(), "=");
                 }
-                timeout = (int) (timeout * 0.33);
+                timeout = (int) (timeout * 0.5);
                 config.close();
             } catch (IOException ioe) {
                 System.out.println("ERROR!!! Config file corupted.");
