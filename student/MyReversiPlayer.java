@@ -130,28 +130,28 @@ public class MyReversiPlayer extends ReversiPlayer {
             if(lastExpandedNode == lastCompleteLevel.size()){
                 lastExpandedNode = 0;
             }
-        }
-        log.println("depth: " + level);
-        int i = 0;
-        int bestMove = 0;
-        Node bestNode = null;
-        for(Node node: legalMoves){
-            moveValue = calculateValue(_player, node);
-            if(moveValue > max){
-                max = moveValue;
-                bestMove = i;
-                bestNode = node;
+            
+            if(end) break;
+            
+            int i = 0;
+            int bestMove = 0;
+            Node bestNode = null;
+            for(Node node: legalMoves){
+                moveValue = calculateValue(_player, node);
+                if(moveValue > max){
+                    max = moveValue;
+                    bestMove = i;
+                    bestNode = node;
+                }
+                i++;
+                if(end) break;
             }
-            i++;
+            // TODO: tree cutting
+            if(!end)
+                move = moves.get(bestMove);
         }
         
-        if(bestNode != null){
-            legalMoves = bestNode.getChildren();
-            lastCompleteLevelDepth--;
-            currentLevelDepth--;
-        }
-        
-        move = moves.get(bestMove);
+        log.println("depth: " + level);
         
         _board.makeMove(_player, move);
 
@@ -176,6 +176,7 @@ public class MyReversiPlayer extends ReversiPlayer {
                         min = value;
                     }
                 }
+                if(end) break;
             }
             if (player == _player) {
                 return max;
