@@ -7,14 +7,16 @@ import reversi.*;
 
 public class MyReversiPlayer extends ReversiPlayer {
 
-    //private final Random _random = new Random();
     private Player _player;
     private Board _board;
     private Log log;
     private int timeout;
+    private static final double TIMEOUT_COEF = 0.8;
     private LinkedList<Node> legalMoves = new LinkedList<>();
     private LinkedList<Node> lastCompleteLevel = new LinkedList<>();
     private int lastCompleteLevelDepth;
+    private int lastExpandedNode;
+    private int nextExpandingChildren;
     private LinkedList<Node> currentLevel = new LinkedList<>();
     private int currentLevelDepth;
     private Player currPlayer;
@@ -48,7 +50,7 @@ public class MyReversiPlayer extends ReversiPlayer {
                     }
                     line = new StringTokenizer(config.readLine(), "=");
                 }
-                timeout = (int) (timeout * 0.2);
+                timeout = (int) (timeout * TIMEOUT_COEF);
                 config.close();
             } catch (IOException ioe) {
                 System.out.println("ERROR!!! Config file corupted.");
@@ -56,39 +58,17 @@ public class MyReversiPlayer extends ReversiPlayer {
         }
     }
 
-    public synchronized void end() {
-        end = true;
-    }
-    
-    public synchronized boolean isEnd(){
-        return end;
-    }
-
     @Override
     public Position getMove() {
-
-        synchronized(this){
-            end = false;
-        }
         
-        // TODO: consider using one Timer thread
-        Thread timer = new Thread() {
-            @Override
-            public void run() {
-                try {
-                    sleep(timeout);
-                } catch (InterruptedException ex) {}
-                end();
-            }
-        };
-        timer.start();
+        long start = System.currentTimeMillis();
         
         int max = -65;
         int moveValue;
         Position move;
         
         List<Position> moves = _board.legalMoves(_player);
-        //move = moves.get(_random.nextInt(moves.size()));
+        move = moves.get(0);
         
         if(legalMoves.isEmpty()){
             for (Position currMove : moves) {
@@ -97,38 +77,61 @@ public class MyReversiPlayer extends ReversiPlayer {
                 legalMoves.add(new Node(newBoard, currMove));
             }
             lastCompleteLevel = legalMoves;
+            lastExpandedNode = 0;
+            nextExpandingChildren = 0;
             currPlayer = _player.opponent();
         }
         level = 0;
-        while(!isEnd()){
-            log.println("lastLevel: "+lastCompleteLevel.size());
-            for(Node node: lastCompleteLevel){
-                Board board = node.getBoard();
-                List<Position> currLegalMoves = board.legalMoves(currPlayer);
-                currentLevelDepth++;
-                
-                for(Position pos: currLegalMoves){
-                    Board newBoard = board.clone();
-                    newBoard.makeMove(currPlayer, pos);
-                    node.addChildren(newBoard, pos);
-                    if (isEnd()){
-                        break;
+        log.println("lastLevel: " + lastCompleteLevel.size());
+        while(!end){
+            while(lastExpandedNode < lastCompleteLevel.size() && !end){
+                Node currNode = lastCompleteLevel.get(lastExpandedNode);
+                if(currNode.getMoves() == null){
+                    currNode.setMoves(currNode.getBoard().legalMoves(currPlayer));
+                }
+                LinkedList<Node> currChildren = currNode.getChildren();
+                Board currBoard = currNode.getBoard();
+                List<Position> currMoves = currNode.getMoves();
+                if(currNode.getMoves().isEmpty()){
+                    Board childrenBoard = currBoard.clone();
+                    Node child = new Node(childrenBoard, null);
+                    currNode.addChildren(child);
+                    currentLevel.add(child);
+                    if((System.currentTimeMillis() - start) > timeout){
+                        end = true;
+                    }
+                } else {
+                    while(nextExpandingChildren < currChildren.size() && !end){
+                        Board childrenBoard = currBoard.clone();
+                        Position childrenMove = currMoves.get(nextExpandingChildren);
+                        childrenBoard.makeMove(currPlayer, childrenMove);
+                        Node child = new Node(childrenBoard, childrenMove);
+                        currNode.addChildren(child);
+                        currentLevel.add(child);
+                        nextExpandingChildren++;
+                        if((System.currentTimeMillis() - start) > timeout){
+                            end = true;
+                        }
+                    }
+                    if(nextExpandingChildren == currChildren.size()){
+                        nextExpandingChildren = 0;
                     }
                 }
-                currentLevel.addAll(node.getChildren());
-                if(isEnd()){
-                    break;
+                lastExpandedNode++; 
+                if(nextExpandingChildren == 0){          
+                    lastCompleteLevel = currentLevel;
+                    lastCompleteLevelDepth++;
+                    currentLevel = new LinkedList<>();
+                    currentLevelDepth++;
+                    currPlayer = currPlayer.opponent();
+                    level++;
                 }
             }
-            if(!isEnd()){
-                lastCompleteLevel = currentLevel;
-                lastCompleteLevelDepth++;
-                currentLevel = new LinkedList<>();
-                currPlayer = currPlayer.opponent();
-                level++;
-            }      
+            if(lastExpandedNode == lastCompleteLevel.size()){
+                lastExpandedNode = 0;
+            }
         }
-        log.println("depth: "+level);
+        log.println("depth: " + level);
         int i = 0;
         int bestMove = 0;
         Node bestNode = null;
