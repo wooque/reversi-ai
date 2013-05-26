@@ -18,7 +18,7 @@ public class MyReversiPlayer extends ReversiPlayer {
     private int lastExpandedNode;
     private int nextExpandingChildren;
     private LinkedList<Node> currentLevel = new LinkedList<>();
-    private int currentLevelDepth;
+    //private int currentLevelDepth;
     private Player currPlayer;
     private boolean end;
     private int level;
@@ -60,17 +60,18 @@ public class MyReversiPlayer extends ReversiPlayer {
 
     @Override
     public Position getMove() {
-        
+
         long start = System.currentTimeMillis();
-        
+
         int max = -65;
         int moveValue;
         Position move;
-        
+
         List<Position> moves = _board.legalMoves(_player);
         move = moves.get(0);
-        
-        if(legalMoves.isEmpty()){
+
+        // TO DO: consider moving this to init method
+        if (legalMoves.isEmpty()) {
             for (Position currMove : moves) {
                 Board newBoard = _board.clone();
                 newBoard.makeMove(_player, currMove);
@@ -81,27 +82,29 @@ public class MyReversiPlayer extends ReversiPlayer {
             nextExpandingChildren = 0;
             currPlayer = _player.opponent();
         }
+        //-------------------------------------------
+
         level = 0;
         log.println("lastLevel: " + lastCompleteLevel.size());
-        while(!end){
-            while(lastExpandedNode < lastCompleteLevel.size() && !end){
+        while (!end) {
+            while (lastExpandedNode < lastCompleteLevel.size() && !end) {
                 Node currNode = lastCompleteLevel.get(lastExpandedNode);
-                if(currNode.getMoves() == null){
+                if (currNode.getMoves() == null) {
                     currNode.setMoves(currNode.getBoard().legalMoves(currPlayer));
                 }
                 LinkedList<Node> currChildren = currNode.getChildren();
                 Board currBoard = currNode.getBoard();
                 List<Position> currMoves = currNode.getMoves();
-                if(currNode.getMoves().isEmpty()){
+                if (currNode.getMoves().isEmpty()) {
                     Board childrenBoard = currBoard.clone();
                     Node child = new Node(childrenBoard, null);
                     currNode.addChildren(child);
                     currentLevel.add(child);
-                    if((System.currentTimeMillis() - start) > timeout){
+                    if ((System.currentTimeMillis() - start) > timeout) {
                         end = true;
                     }
                 } else {
-                    while(nextExpandingChildren < currChildren.size() && !end){
+                    while (nextExpandingChildren < currChildren.size() && !end) {
                         Board childrenBoard = currBoard.clone();
                         Position childrenMove = currMoves.get(nextExpandingChildren);
                         childrenBoard.makeMove(currPlayer, childrenMove);
@@ -109,74 +112,115 @@ public class MyReversiPlayer extends ReversiPlayer {
                         currNode.addChildren(child);
                         currentLevel.add(child);
                         nextExpandingChildren++;
-                        if((System.currentTimeMillis() - start) > timeout){
+                        if ((System.currentTimeMillis() - start) > timeout) {
                             end = true;
                         }
                     }
-                    if(nextExpandingChildren == currChildren.size()){
+                    if (nextExpandingChildren == currChildren.size()) {
                         nextExpandingChildren = 0;
                     }
                 }
-                lastExpandedNode++; 
-                if(nextExpandingChildren == 0){          
+                lastExpandedNode++;
+                if (nextExpandingChildren == 0) {
                     lastCompleteLevel = currentLevel;
                     lastCompleteLevelDepth++;
                     currentLevel = new LinkedList<>();
-                    currentLevelDepth++;
+                    //currentLevelDepth++;
                     currPlayer = currPlayer.opponent();
                     level++;
                 }
             }
-            if(lastExpandedNode == lastCompleteLevel.size()){
+            if (lastExpandedNode == lastCompleteLevel.size()) {
                 lastExpandedNode = 0;
             }
-            
-            if(end) break;
-            
-            int i = 0;
-            int bestMove = 0;
-            Node bestNode = null;
-            for(Node node: legalMoves){
-                moveValue = calculateValue(_player, node);
-                if(moveValue > max){
-                    max = moveValue;
-                    bestMove = i;
-                    bestNode = node;
-                }
-                i++;
-                if(end) break;
+
+            if (end) {
+                break;
             }
-            // TODO: tree cutting
-            if(!end)
-                move = moves.get(bestMove);
+
+            Node bestNode = null;
+            Position bestMove = null;
+            for (Node node : legalMoves) {
+                moveValue = calculateValue(_player, node);
+                if (moveValue > max) {
+                    bestNode = node;
+                    max = moveValue;
+                    bestMove = node.getMove();
+                }
+                if (end) {
+                    break;
+                }
+            }
+
+            legalMoves = bestNode.getChildren();
+            //currentLevelDepth--;
+            lastCompleteLevelDepth--;
+            if (!legalMoves.isEmpty() && (lastCompleteLevelDepth > 0)) {
+                Node firstCurr = legalMoves.getFirst().getChildren().getFirst();
+                Node lastCurr = legalMoves.getLast().getChildren().getLast();
+                int depth = lastCompleteLevelDepth - 1;
+                while (depth != 0) {
+                    firstCurr = firstCurr.getChildren().getFirst();
+                    lastCurr = lastCurr.getChildren().getLast();
+                    depth--;
+                }
+                int first = lastCompleteLevel.indexOf(firstCurr);
+                int last = lastCompleteLevel.indexOf(lastCurr);
+                log.println("first: " + first + " last: " + last);
+                lastCompleteLevel = new LinkedList<>(lastCompleteLevel.subList(first, last));
+                log.println("remaining: " + lastCompleteLevel.size());
+                if (first > lastExpandedNode) {
+                    lastExpandedNode = 0;
+                    nextExpandingChildren = 0;
+                    currentLevel = new LinkedList<>();
+                } else if (last < lastExpandedNode) {
+                    lastExpandedNode = 0;
+                    nextExpandingChildren = 0;
+                    firstCurr = legalMoves.getFirst().getChildren().getFirst();
+                    lastCurr = legalMoves.getLast().getChildren().getLast();
+                    first = currentLevel.indexOf(firstCurr);
+                    last = currentLevel.indexOf(lastCurr);
+                    currentLevel = new LinkedList<>(currentLevel.subList(first, last));
+                } else {
+                    firstCurr = legalMoves.getFirst().getChildren().getFirst();
+                    first = currentLevel.indexOf(firstCurr);
+                    currentLevel = new LinkedList<>(currentLevel.subList(first, currentLevel.size() - 1));
+                }
+            }
+
+            if (!end) {
+                move = bestMove;
+            }
         }
-        
+
         log.println("depth: " + level);
-        
+
         _board.makeMove(_player, move);
 
         return move;
     }
 
-    private int calculateValue(Player player, Node node){
-        if(node.getChildren().isEmpty()){
+    private int calculateValue(Player player, Node node) {
+        if (node.getChildren().isEmpty()) {
             return BoardUtil.calculateBoardValue(node.getBoard(), player);
         } else {
             int max = -65;
             int min = 65;
             int value;
-            for(Node children: node.getChildren()){
+            for (Node children : node.getChildren()) {
                 value = calculateValue(player.opponent(), children);
-                if(player == _player){
-                    if(value > max){
+                if (player == _player) {
+                    if (value > max) {
                         max = value;
                     }
                 } else {
-                    if(value < min){
+                    if (value < min) {
                         min = value;
                     }
                 }
-                if(end) break;
+                if (end) {
+                    break;
+                }
             }
             if (player == _player) {
                 return max;
@@ -185,42 +229,52 @@ public class MyReversiPlayer extends ReversiPlayer {
             }
         }
     }
-    
+
     @Override
     public void opponentsMove(Position position) {
-        
+
         _board.makeMove(_player.opponent(), position);
-        log.println("legal: "+ legalMoves.size());
-        if(!legalMoves.isEmpty()){
-            for(Node node: legalMoves){
-                if(BoardUtil.equals(node.getMove(), position)){
+        log.println("legal: " + legalMoves.size());
+        if (!legalMoves.isEmpty()) {
+            for (Node node : legalMoves) {
+                if (BoardUtil.equals(node.getMove(), position)) {
                     legalMoves = node.getChildren();
-                    currentLevelDepth--;
+                    //currentLevelDepth--;
                     lastCompleteLevelDepth--;
-                    Node firstCurr = legalMoves.getFirst().getChildren().getFirst();
-                    Node firstPrev = null;
-                    Node lastCurr = legalMoves.getLast().getChildren().getLast();
-                    Node lastPrev = null;
-                    int depth = lastCompleteLevelDepth;
-                    while(firstCurr != null && lastCurr != null && depth!=0){
-                        firstPrev = firstCurr;
-                        lastPrev = lastCurr;
-                        try{
+                    if (!legalMoves.isEmpty() && (lastCompleteLevelDepth > 0)) {
+                        Node firstCurr = legalMoves.getFirst().getChildren().getFirst();
+                        Node lastCurr = legalMoves.getLast().getChildren().getLast();
+                        int depth = lastCompleteLevelDepth - 1;
+                        while (depth != 0) {
                             firstCurr = firstCurr.getChildren().getFirst();
                             lastCurr = lastCurr.getChildren().getLast();
-                        } catch(NoSuchElementException nsee) {
-                            firstCurr = null;
-                            lastCurr = null;
+                            depth--;
                         }
-                        depth--;
+                        int first = lastCompleteLevel.indexOf(firstCurr);
+                        int last = lastCompleteLevel.indexOf(lastCurr);
+                        log.println("first: " + first + " last: " + last);
+                        lastCompleteLevel = new LinkedList<>(lastCompleteLevel.subList(first, last));
+                        log.println("remaining: " + lastCompleteLevel.size());
+                        if (first > lastExpandedNode) {
+                            lastExpandedNode = 0;
+                            nextExpandingChildren = 0;
+                            currentLevel = new LinkedList<>();
+                        } else if (last < lastExpandedNode) {
+                            lastExpandedNode = 0;
+                            nextExpandingChildren = 0;
+                            firstCurr = legalMoves.getFirst().getChildren().getFirst();
+                            lastCurr = legalMoves.getLast().getChildren().getLast();
+                            first = currentLevel.indexOf(firstCurr);
+                            last = currentLevel.indexOf(lastCurr);
+                            currentLevel = new LinkedList<>(currentLevel.subList(first, last));
+                        } else {
+                            firstCurr = legalMoves.getFirst().getChildren().getFirst();
+                            first = currentLevel.indexOf(firstCurr);
+                            currentLevel = new LinkedList<>(currentLevel.subList(first, currentLevel.size() - 1));
+                        }
                     }
-                    int first = lastCompleteLevel.indexOf(firstPrev);
-                    int last = lastCompleteLevel.indexOf(lastPrev);
-                    log.println("first: " + first + " last: " + last);
-                    lastCompleteLevel = new LinkedList<>(lastCompleteLevel.subList(first, last));
-                    log.println("cut: "+lastCompleteLevel.size());
                 }
-            }  
+            }
         }
     }
 
