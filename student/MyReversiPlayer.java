@@ -23,6 +23,22 @@ public class MyReversiPlayer extends ReversiPlayer {
     private Player currPlayer;
     private boolean end;
 
+    private class Node {
+
+        Board board;
+        int value;
+        LinkedList<Node> children;
+        List<Position> moves;
+        Position move;
+
+        public Node(Board board, Position move) {
+            this.board = board;
+            this.value = -65;
+            this.move = move;
+            children = new LinkedList<>();
+        }
+    }
+    
     @Override
     public void init(Player player) {
 
@@ -80,16 +96,16 @@ public class MyReversiPlayer extends ReversiPlayer {
         int tempMax = -65;
         Node tempNode = null;
         for(Node node: legalMoves){
-            int value = node.getValue();
+            int value = node.value;
             if(value > tempMax){
                 tempMax = value;
                 tempNode = node;
             }
         }
         if(tempNode != null){
-            move = tempNode.getMove();
+            move = tempNode.move;
         } else {
-            move = legalMoves.get(0).getMove();
+            move = legalMoves.get(0).move;
         }
 
         log.println("getMove(): lastExpandedNode: " + lastExpandedNode);
@@ -116,16 +132,16 @@ public class MyReversiPlayer extends ReversiPlayer {
         log.println("getMove(): lastLevel before expanding: " + lastCompleteLevel.size());
         while ((lastExpandedNode < lastCompleteLevel.size()) && !end) {
             Node currNode = lastCompleteLevel.get(lastExpandedNode);
-            if (currNode.getMoves() == null) {
-                currNode.setMoves(currNode.getBoard().legalMoves(currPlayer));
+            if (currNode.moves == null) {
+                currNode.moves  = currNode.board.legalMoves(currPlayer);
             }
-            Board currBoard = currNode.getBoard();
-            List<Position> currMoves = currNode.getMoves();
-            if (currNode.getMoves().isEmpty()) {
+            Board currBoard = currNode.board;
+            List<Position> currMoves = currNode.moves;
+            if (currNode.moves.isEmpty()) {
                 log.println("getMOve(): Oh boy, no posible moves to play...");
                 Board childrenBoard = currBoard.clone();
                 Node child = new Node(childrenBoard, null);
-                currNode.addChildren(child);
+                currNode.children.add(child);
                 currentLevel.add(child);
                 lastExpandedNode++;
                 if ((System.currentTimeMillis() - start) > timeout) {
@@ -138,7 +154,7 @@ public class MyReversiPlayer extends ReversiPlayer {
                     Position childrenMove = currMoves.get(nextExpandingChildren);
                     childrenBoard.makeMove(currPlayer, childrenMove);
                     Node child = new Node(childrenBoard, childrenMove);
-                    currNode.addChildren(child);
+                    currNode.children.add(child);
                     currentLevel.add(child);
                     nextExpandingChildren++;
                     if ((System.currentTimeMillis() - start) > timeout) {
@@ -179,7 +195,7 @@ public class MyReversiPlayer extends ReversiPlayer {
             moveValue = calculateValue(_player, node);
             if (moveValue > max) {
                 max = moveValue;
-                bestMove = node.getMove();
+                bestMove = node.move;
             }
             if (end) {
                 log.println("getMove(): Our time is runned out!");
@@ -194,20 +210,20 @@ public class MyReversiPlayer extends ReversiPlayer {
     }
     
     private int calculateValue(Player player, Node node) {
-        if (node.getChildren().isEmpty()) {
-            if(node.getValue() == -65){
-                node.setValue(BoardUtil.calculateBoardValue(node.getBoard(), player));
+        if (node.children.isEmpty()) {
+            if(node.value == -65){
+                node.value = calculateBoardValue(node.board, player);
             }
             if((System.currentTimeMillis() - start) > timeout){
                 end = true;
                 isMinimaxInterrupted = true;
             }
-            return node.getValue();
+            return node.value;
         } else {
             int max = -65;
             int min = 65;
             int value;
-            for (Node children : node.getChildren()) {
+            for (Node children : node.children) {
                 value = calculateValue(player.opponent(), children);
                 if (player == _player) {
                     if (value > max) {
@@ -232,17 +248,17 @@ public class MyReversiPlayer extends ReversiPlayer {
     
     private void cut(Position move){
         for (Node node : legalMoves) {
-            if (BoardUtil.equals(node.getMove(), move)) {
-                legalMoves = node.getChildren();
+            if (equals(node.move, move)) {
+                legalMoves = node.children;
                 lastCompleteLevelDepth--;
                 if (!legalMoves.isEmpty() && (lastCompleteLevelDepth > 0)) {
-                    Node firstCurr = legalMoves.getFirst().getChildren().getFirst();
-                    Node lastCurr = legalMoves.getLast().getChildren().getLast();
+                    Node firstCurr = legalMoves.getFirst().children.getFirst();
+                    Node lastCurr = legalMoves.getLast().children.getLast();
                     int depth = lastCompleteLevelDepth - 1;
                     log.println("lastCompleteLevel before cut: " + lastCompleteLevelDepth);
                     while (depth != 0) {
-                        firstCurr = firstCurr.getChildren().getFirst();
-                        lastCurr = lastCurr.getChildren().getLast();
+                        firstCurr = firstCurr.children.getFirst();
+                        lastCurr = lastCurr.children.getLast();
                         depth--;
                     }
                     int first = lastCompleteLevel.indexOf(firstCurr);
@@ -258,8 +274,8 @@ public class MyReversiPlayer extends ReversiPlayer {
                     } else if (last < lastExpandedNode) {
                         lastExpandedNode = 0;
                         nextExpandingChildren = 0;
-                        firstCurr = firstCurr.getChildren().getFirst();
-                        lastCurr = lastCurr.getChildren().getLast();
+                        firstCurr = firstCurr.children.getFirst();
+                        lastCurr = lastCurr.children.getLast();
                         first = currentLevel.indexOf(firstCurr);
                         last = currentLevel.indexOf(lastCurr);
                         currentLevel = new LinkedList<>(currentLevel.subList(first, last + 1));
@@ -271,7 +287,7 @@ public class MyReversiPlayer extends ReversiPlayer {
                     } else {
                         lastExpandedNode-=first;
                         if(currentLevel.size()>0){
-                            firstCurr = firstCurr.getChildren().getFirst();
+                            firstCurr = firstCurr.children.getFirst();
                             first = currentLevel.indexOf(firstCurr);
                             log.println("currentLevel: first: " + first + ", last/size-1: " + (currentLevel.size()-1));
                             currentLevel = new LinkedList<>(currentLevel.subList(first, currentLevel.size()));
@@ -283,6 +299,38 @@ public class MyReversiPlayer extends ReversiPlayer {
                 }
             }
         }
+    }
+    
+    private static int calculateBoardValue(Board board, Player player) {
+        int value = 0;
+        for (int i = 0; i < 8; ++i) {
+            for (int j = 0; j < 8; ++j) {
+                try {
+                    Field f = board.getField(new Position(i, j));
+                    if (equals(f, player)) {
+                        value++;
+                    } else if (equals(f, player.opponent())) {
+                        value--;
+                    }
+                } catch (InvalidPositionException ex) {
+                    System.out.println(ex);
+                }
+            }
+        }
+        return value;
+    }
+    
+    private static boolean equals(Field f, Player p){
+        if(f == Field.BLACK && p == Player.BLACK)
+            return true;
+        else if(f == Field.WHITE && p == Player.WHITE)
+            return true;
+        else
+            return false;
+    }
+    
+    private static boolean equals(Position first, Position second){
+        return (first.getX() == second.getX() && first.getY() == second.getY());
     }
 
     @Override
