@@ -38,94 +38,37 @@ public class MyReversiPlayer extends ReversiPlayer {
             children = new LinkedList<>();
         }
     }
-    
-    @Override
-    public void init(Player player) {
-
-        _player = player;
-        _board = new Board();
-
-        log = new Log("reversi.log");
-
-        FileReader configFile = null;
-        try {
-            configFile = new FileReader("src/student/config.properties");
-        } catch (FileNotFoundException ex) {
-            System.out.println("ERROR!!! No config file.");
-        }
-
-        if (configFile != null) {
-            BufferedReader config = new BufferedReader(configFile);
-            StringTokenizer line;
-            try {
-                line = new StringTokenizer(config.readLine(), "=");
-                while (true) {
-                    if (line.nextToken().equals("timeout")) {
-                        timeout = Integer.parseInt(line.nextToken());
-                        break;
+         
+    private static int calculateBoardValue(Board board, Player player) {
+        int value = 0;
+        for (int i = 0; i < 8; ++i) {
+            for (int j = 0; j < 8; ++j) {
+                try {
+                    Field f = board.getField(new Position(i, j));
+                    if (equals(f, player)) {
+                        value++;
+                    } else if (equals(f, player.opponent())) {
+                        value--;
                     }
-                    line = new StringTokenizer(config.readLine(), "=");
+                } catch (InvalidPositionException ex) {
+                    System.out.println(ex);
                 }
-                timeout = (int) (timeout * TIMEOUT_COEF);
-                config.close();
-            } catch (IOException ioe) {
-                System.out.println("ERROR!!! Config file corupted.");
             }
         }
-        
-        List<Position> moves = _board.legalMoves(Player.BLACK);
-        for (Position currMove : moves) {
-            Board newBoard = _board.clone();
-            newBoard.makeMove(Player.BLACK, currMove);
-            legalMoves.add(new Node(newBoard, currMove));
-        }
-        lastCompleteLevel = legalMoves;
-        currPlayer = Player.WHITE;
+        return value;
     }
-
-    @Override
-    public Position getMove() {
-
-        start = System.currentTimeMillis();
-        end = false;
-        
-        Position move;
-
-        log.println("getMove(): legalMoves on begin: " + legalMoves.size());
-        
-        int tempMax = -65;
-        Node tempNode = null;
-        for(Node node: legalMoves){
-            int value = node.value;
-            if(value > tempMax){
-                tempMax = value;
-                tempNode = node;
-            }
-        }
-        if(tempNode != null){
-            move = tempNode.move;
-        } else {
-            move = legalMoves.get(0).move;
-        }
-
-        log.println("getMove(): lastExpandedNode: " + lastExpandedNode);
-        log.println("getMove(): nextExpandingChildren: " + nextExpandingChildren);
-        while (!end) {
-            if(!isMinimaxInterrupted){
-                if (expand()) break;
-            }
-            Position tempMove = minimax();
-            if(tempMove != null)
-            move = tempMove;
-        }
-        log.println("getMove(): lastExpandedNode: " + lastExpandedNode);
-        log.println("getMove(): nextExpandingChildren: " + nextExpandingChildren);
-        log.println("getMove(): currentLevel size: " + currentLevel.size());
-        cut(move);
-
-        _board.makeMove(_player, move);
-
-        return move;
+    
+    private static boolean equals(Field f, Player p){
+        if(f == Field.BLACK && p == Player.BLACK)
+            return true;
+        else if(f == Field.WHITE && p == Player.WHITE)
+            return true;
+        else
+            return false;
+    }
+    
+    private static boolean equals(Position first, Position second){
+        return (first.getX() == second.getX() && first.getY() == second.getY());
     }
     
     private boolean expand() {
@@ -301,38 +244,95 @@ public class MyReversiPlayer extends ReversiPlayer {
         }
     }
     
-    private static int calculateBoardValue(Board board, Player player) {
-        int value = 0;
-        for (int i = 0; i < 8; ++i) {
-            for (int j = 0; j < 8; ++j) {
-                try {
-                    Field f = board.getField(new Position(i, j));
-                    if (equals(f, player)) {
-                        value++;
-                    } else if (equals(f, player.opponent())) {
-                        value--;
+    @Override
+    public void init(Player player) {
+
+        _player = player;
+        _board = new Board();
+
+        log = new Log("reversi.log");
+
+        FileReader configFile = null;
+        try {
+            configFile = new FileReader("src/student/config.properties");
+        } catch (FileNotFoundException ex) {
+            System.out.println("ERROR!!! No config file.");
+        }
+
+        if (configFile != null) {
+            BufferedReader config = new BufferedReader(configFile);
+            StringTokenizer line;
+            try {
+                line = new StringTokenizer(config.readLine(), "=");
+                while (true) {
+                    if (line.nextToken().equals("timeout")) {
+                        timeout = Integer.parseInt(line.nextToken());
+                        break;
                     }
-                } catch (InvalidPositionException ex) {
-                    System.out.println(ex);
+                    line = new StringTokenizer(config.readLine(), "=");
                 }
+                timeout = (int) (timeout * TIMEOUT_COEF);
+                config.close();
+            } catch (IOException ioe) {
+                System.out.println("ERROR!!! Config file corupted.");
             }
         }
-        return value;
-    }
-    
-    private static boolean equals(Field f, Player p){
-        if(f == Field.BLACK && p == Player.BLACK)
-            return true;
-        else if(f == Field.WHITE && p == Player.WHITE)
-            return true;
-        else
-            return false;
-    }
-    
-    private static boolean equals(Position first, Position second){
-        return (first.getX() == second.getX() && first.getY() == second.getY());
+        
+        List<Position> moves = _board.legalMoves(Player.BLACK);
+        for (Position currMove : moves) {
+            Board newBoard = _board.clone();
+            newBoard.makeMove(Player.BLACK, currMove);
+            legalMoves.add(new Node(newBoard, currMove));
+        }
+        lastCompleteLevel = legalMoves;
+        currPlayer = Player.WHITE;
     }
 
+    @Override
+    public Position getMove() {
+
+        start = System.currentTimeMillis();
+        end = false;
+        
+        Position move;
+
+        log.println("getMove(): legalMoves on begin: " + legalMoves.size());
+        
+        int tempMax = -65;
+        Node tempNode = null;
+        for(Node node: legalMoves){
+            int value = node.value;
+            if(value > tempMax){
+                tempMax = value;
+                tempNode = node;
+            }
+        }
+        if(tempNode != null){
+            move = tempNode.move;
+        } else {
+            move = legalMoves.get(0).move;
+        }
+
+        log.println("getMove(): lastExpandedNode: " + lastExpandedNode);
+        log.println("getMove(): nextExpandingChildren: " + nextExpandingChildren);
+        while (!end) {
+            if(!isMinimaxInterrupted){
+                if (expand()) break;
+            }
+            Position tempMove = minimax();
+            if(tempMove != null)
+            move = tempMove;
+        }
+        log.println("getMove(): lastExpandedNode: " + lastExpandedNode);
+        log.println("getMove(): nextExpandingChildren: " + nextExpandingChildren);
+        log.println("getMove(): currentLevel size: " + currentLevel.size());
+        cut(move);
+
+        _board.makeMove(_player, move);
+
+        return move;
+    }
+    
     @Override
     public void opponentsMove(Position position) {
 
