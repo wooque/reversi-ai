@@ -6,12 +6,14 @@ import reversi.*;
 public class Node {
 
     private Board board;
+    private int value;
     private LinkedList<Node> children;
     private List<Position> moves;
     private Position move;
 
     public Node(Board board, Position move) {
         this.board = board;
+        this.value = -65;
         this.move = move;
         children = new LinkedList<>();
     }
@@ -38,5 +40,13 @@ public class Node {
     
     public void addChildren(Node child) {
         children.add(child);
+    }
+
+    public int getValue() {
+        return value;
+    }
+
+    public void setValue(int value) {
+        this.value = value;
     }
 }
