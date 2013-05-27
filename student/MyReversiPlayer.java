@@ -71,8 +71,10 @@ public class MyReversiPlayer extends ReversiPlayer {
         return (first.getX() == second.getX() && first.getY() == second.getY());
     }
     
-    private boolean expand() {
-        log.println("getMove(): lastLevel before expanding: " + lastCompleteLevel.size());
+    private void expand() {
+        log.println("-------------------EXPAND------------------");
+        log.println("lastLevel before expanding: "+lastCompleteLevel.size());
+        log.println("lastExpandedNode: "+lastExpandedNode);
         while ((lastExpandedNode < lastCompleteLevel.size()) && !end) {
             Node currNode = lastCompleteLevel.get(lastExpandedNode);
             if (currNode.moves == null) {
@@ -81,7 +83,7 @@ public class MyReversiPlayer extends ReversiPlayer {
             Board currBoard = currNode.board;
             List<Position> currMoves = currNode.moves;
             if (currNode.moves.isEmpty()) {
-                log.println("getMOve(): Oh boy, no posible moves to play...");
+                log.println("Hit no posible moves to play...");
                 Board childrenBoard = currBoard.clone();
                 Node child = new Node(childrenBoard, null);
                 currNode.children.add(child);
@@ -89,9 +91,10 @@ public class MyReversiPlayer extends ReversiPlayer {
                 lastExpandedNode++;
                 if ((System.currentTimeMillis() - start) > timeout) {
                     end = true;
+                    log.println("----------------ENDING ON " + (System.currentTimeMillis()-start) + " ms-----------------");
                 }
             } else {
-                //log.println("getMove(): nextExpandingChildren: " + nextExpandingChildren);
+                log.println("nextExpandingChildren: " + nextExpandingChildren);
                 while ((nextExpandingChildren < currMoves.size()) && !end) {
                     Board childrenBoard = currBoard.clone();
                     Position childrenMove = currMoves.get(nextExpandingChildren);
@@ -102,7 +105,7 @@ public class MyReversiPlayer extends ReversiPlayer {
                     nextExpandingChildren++;
                     if ((System.currentTimeMillis() - start) > timeout) {
                         end = true;
-                        log.println("Ending on " + (System.currentTimeMillis()-start) + " ms");
+                        log.println("----------------ENDING ON " + (System.currentTimeMillis()-start) + " ms-----------------");
                     }
                 }
                 if (nextExpandingChildren == currMoves.size()) {
@@ -113,19 +116,18 @@ public class MyReversiPlayer extends ReversiPlayer {
         }
         if (lastExpandedNode == lastCompleteLevel.size()) {
             lastExpandedNode = 0;
-            log.println("getMOve(): lastCompleteLevel expanding is finished!");
+            log.println("lastCompleteLevel expanding is finished!");
         }
         if (lastExpandedNode == 0 && nextExpandingChildren == 0) {
             lastCompleteLevel = currentLevel;
             lastCompleteLevelDepth++;
             currentLevel = new LinkedList<>();
             currPlayer = currPlayer.opponent();
+            log.println("COMPLETELEVEL BECOMES LASTCOMPLETELEVEL");
         }
-        if (end) {
-            log.println("getMove(): Our time is runned out!");
-            return true;
-        }
-        return false;
+        log.println("lastExpandedNode: "+lastExpandedNode);
+        log.println("nextExpandingChild: "+nextExpandingChildren);
+        log.println("--------------------EXPAND END-----------------");
     }
 
     private Position minimax() {
@@ -133,7 +135,8 @@ public class MyReversiPlayer extends ReversiPlayer {
         int max = -65;
         Position bestMove = null;
         Position move = null;
-        log.println("getMove(): minimax: moves to choose from: " + legalMoves.size());
+        log.println("--------------------MINIMAX--------------------");
+        log.println("moves to choose from: " + legalMoves.size());
         for (Node node : legalMoves) {
             moveValue = calculateValue(_player, node);
             if (moveValue > max) {
@@ -141,7 +144,6 @@ public class MyReversiPlayer extends ReversiPlayer {
                 bestMove = node.move;
             }
             if (end) {
-                log.println("getMove(): Our time is runned out!");
                 break;
             }
         }
@@ -149,6 +151,7 @@ public class MyReversiPlayer extends ReversiPlayer {
             move = bestMove;
             isMinimaxInterrupted = false;
         }
+        log.println("--------------------MINIMAX END-----------------");
         return move;
     }
     
@@ -160,6 +163,7 @@ public class MyReversiPlayer extends ReversiPlayer {
             if((System.currentTimeMillis() - start) > timeout){
                 end = true;
                 isMinimaxInterrupted = true;
+                log.println("----------------ENDING ON " + (System.currentTimeMillis()-start) + " ms-----------------");
             }
             return node.value;
         } else {
@@ -190,15 +194,17 @@ public class MyReversiPlayer extends ReversiPlayer {
     }
     
     private void cut(Position move){
+        log.println("--------------------CUTTING--------------------");
+        log.println("LegalMoves before "+legalMoves.size());
         for (Node node : legalMoves) {
             if (equals(node.move, move)) {
                 legalMoves = node.children;
+                log.println("LegalMoves after "+legalMoves.size());
                 lastCompleteLevelDepth--;
                 if (!legalMoves.isEmpty() && (lastCompleteLevelDepth > 0)) {
                     Node firstCurr = legalMoves.getFirst().children.getFirst();
                     Node lastCurr = legalMoves.getLast().children.getLast();
                     int depth = lastCompleteLevelDepth - 1;
-                    log.println("lastCompleteLevel before cut: " + lastCompleteLevelDepth);
                     while (depth != 0) {
                         firstCurr = firstCurr.children.getFirst();
                         lastCurr = lastCurr.children.getLast();
@@ -229,6 +235,7 @@ public class MyReversiPlayer extends ReversiPlayer {
                         currentLevel = new LinkedList<>();
                     } else {
                         lastExpandedNode-=first;
+                        log.println("lastExpandedNode modified to "+lastExpandedNode);
                         if(currentLevel.size()>0){
                             firstCurr = firstCurr.children.getFirst();
                             first = currentLevel.indexOf(firstCurr);
@@ -237,8 +244,10 @@ public class MyReversiPlayer extends ReversiPlayer {
                             log.println("currentLevel: remaining after cut: " + currentLevel.size());
                         }
                     }
-                    log.println("lastCompleteLevel after cut: " + lastCompleteLevelDepth);
+                    log.println("lastExpandedNode: " + lastExpandedNode);
+                    log.println("nextExpandingChildren: " + nextExpandingChildren);
                     log.println("currentLevel size after: " + currentLevel.size());
+                    log.println("--------------------CUTTING END-----------------");
                 }
             }
         }
@@ -296,40 +305,52 @@ public class MyReversiPlayer extends ReversiPlayer {
         
         Position move;
 
-        log.println("getMove(): legalMoves on begin: " + legalMoves.size());
+        log.println("--------------GET MOVE---------------");
+        log.println("getMove(): legalMoves to chose from: " + legalMoves.size());
         
-        int tempMax = -65;
-        Node tempNode = null;
+        if(legalMoves.isEmpty()){
+            List<Position> moves = _board.legalMoves(_player);
+            for (Position currMove : moves) {
+                Board newBoard = _board.clone();
+                newBoard.makeMove(_player, currMove);
+                legalMoves.add(new Node(newBoard, currMove));
+            }
+            lastCompleteLevel = legalMoves;
+            currPlayer = _player.opponent();
+            log.println("----------------WARNING-------------");
+        }
+        int max = -65;
+        Node maxNode = null;
         for(Node node: legalMoves){
             int value = node.value;
-            if(value > tempMax){
-                tempMax = value;
-                tempNode = node;
+            if(value > max){
+                max = value;
+                maxNode = node;
             }
         }
-        if(tempNode != null){
-            move = tempNode.move;
+        if(maxNode != null){
+            move = maxNode.move;
         } else {
             move = legalMoves.get(0).move;
         }
 
-        log.println("getMove(): lastExpandedNode: " + lastExpandedNode);
-        log.println("getMove(): nextExpandingChildren: " + nextExpandingChildren);
         while (!end) {
             if(!isMinimaxInterrupted){
-                if (expand()) break;
+                expand();
+            }
+            if (end) {
+                break;
             }
             Position tempMove = minimax();
             if(tempMove != null)
-            move = tempMove;
+                move = tempMove;
         }
-        log.println("getMove(): lastExpandedNode: " + lastExpandedNode);
-        log.println("getMove(): nextExpandingChildren: " + nextExpandingChildren);
-        log.println("getMove(): currentLevel size: " + currentLevel.size());
+
         cut(move);
 
         _board.makeMove(_player, move);
 
+        log.println("--------------GET MOVE END---------------");
         return move;
     }
     
