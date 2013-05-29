@@ -87,9 +87,9 @@ public class MyReversiPlayer extends ReversiPlayer {
         while ((lastExpandedNode < lastCompleteLevel.size()) && !end) {
             log.println("Node time: "+(System.currentTimeMillis()-start)+" ms");
             Node currNode = lastCompleteLevel.get(lastExpandedNode);
-//            if (currNode.moves == null) {
-//                currNode.moves  = currNode.board.legalMoves(currPlayer);
-//            }
+            if (currNode.moves == null) {
+                currNode.moves  = currNode.board.legalMoves(currPlayer);
+            }
             Board currBoard = currNode.board;
             List<Position> currMoves = currNode.moves;
             if (currNode.moves.isEmpty()) {
@@ -101,7 +101,7 @@ public class MyReversiPlayer extends ReversiPlayer {
                 //log.println("Hit no posible moves to play...");
                 Board childrenBoard = currBoard.clone();
                 Node child = new Node(childrenBoard, null);
-                child.moves = childrenBoard.legalMoves(currPlayer.opponent());
+                //child.moves = childrenBoard.legalMoves(currPlayer.opponent());
                 currNode.children.add(child);
                 currentLevel.add(child);
                 lastExpandedNode++;
@@ -120,7 +120,7 @@ public class MyReversiPlayer extends ReversiPlayer {
                     Position childrenMove = currMoves.get(nextExpandingChildren);
                     childrenBoard.makeMove(currPlayer, childrenMove);
                     Node child = new Node(childrenBoard, childrenMove);
-                    child.moves = childrenBoard.legalMoves(currPlayer.opponent());
+                    //child.moves = childrenBoard.legalMoves(currPlayer.opponent());
                     log.println("Child before lists: "+(System.currentTimeMillis()-start)+" ms");
                     currNode.children.add(child);
                     currentLevel.add(child);
@@ -179,6 +179,9 @@ public class MyReversiPlayer extends ReversiPlayer {
         if (node.children.isEmpty()) {
             if(node.value == -9999){
                 node.value = calculateBoardValue(node.board, _player);
+                if(node.moves == null){
+                    node.moves = node.board.legalMoves(currPlayer);
+                }
                 if(player == _player){
                     node.value *= (0.5 + 0.075 * (node.moves.size()-1));
                 } else {
@@ -328,7 +331,7 @@ public class MyReversiPlayer extends ReversiPlayer {
             Board newBoard = _board.clone();
             newBoard.makeMove(Player.BLACK, currMove);
             Node n = new Node(newBoard, currMove);
-            n.moves = n.board.legalMoves(Player.WHITE);
+            //n.moves = n.board.legalMoves(Player.WHITE);
             legalMoves.add(n);
         }
         lastCompleteLevel = legalMoves;
@@ -359,7 +362,7 @@ public class MyReversiPlayer extends ReversiPlayer {
                 Board newBoard = _board.clone();
                 newBoard.makeMove(_player, currMove);
                 Node n = new Node(newBoard, currMove);
-                n.moves = n.board.legalMoves(_player.opponent());
+                //n.moves = n.board.legalMoves(_player.opponent());
                 legalMoves.add(n);
             }
             lastCompleteLevel = legalMoves;
