@@ -27,7 +27,7 @@ public class MyReversiPlayer extends ReversiPlayer {
                                                      {99, -8, 8, 6, 6, 8, -8,99}};
 
     private class Node {
-
+        
         Board board;
         int value;
         LinkedList<Node> children;
@@ -105,6 +105,7 @@ public class MyReversiPlayer extends ReversiPlayer {
     
     private boolean isTimeRanOut(){
         if(System.currentTimeMillis() - start > timeout){
+            System.out.println("ENDING on "+(System.currentTimeMillis() - start));
             end = true;
             return true;
         }
@@ -112,7 +113,14 @@ public class MyReversiPlayer extends ReversiPlayer {
     }
 
     private int abminimax(Node node, Player player, int maxDepth, int currDepth, Integer alphaParam, Integer betaParam) {
-        if (isTimeRanOut() || maxDepth == currDepth) {
+        if (isTimeRanOut()) {
+            if(player == _player){
+                return -9999;
+            } else {
+                return 9999;
+            }
+        }
+        if (maxDepth == currDepth) {
             if (node.value == -9999) {
                 node.value = calculateNodeValue(node, player, _player);
             }
@@ -128,10 +136,14 @@ public class MyReversiPlayer extends ReversiPlayer {
         }
         if (node.moves.isEmpty()) {
             Node child;
-            Board newBoard = node.board.clone();
-            child = new Node(newBoard, null);
-            child.moves = child.board.legalMoves(player.opponent());
-            node.children.add(child);
+            if(node.children.isEmpty()){
+                Board newBoard = node.board.clone();
+                child = new Node(newBoard, null);
+                child.moves = child.board.legalMoves(player.opponent());
+                node.children.add(child);
+            } else {
+                child = node.children.get(0);
+            }
 
             bestValue = abminimax(child, player.opponent(), maxDepth, currDepth + 1, alpha, beta);
 
@@ -161,7 +173,7 @@ public class MyReversiPlayer extends ReversiPlayer {
                         if (currDepth == 0) {
                             bestNode = child;
                         }
-                        if (bestValue > beta) {
+                        if (bestValue >= beta) {
                             return bestValue;
                         }
                         alpha = Math.max(alpha, bestValue);
@@ -169,7 +181,7 @@ public class MyReversiPlayer extends ReversiPlayer {
                 } else {
                     if (value < bestValue) {
                         bestValue = value;
-                        if (bestValue < alpha) {
+                        if (bestValue <= alpha) {
                             return bestValue;
                         }
                         beta = Math.min(beta, bestValue);
@@ -222,26 +234,34 @@ public class MyReversiPlayer extends ReversiPlayer {
         end = false;
 
         bestNode = null;
-        abminimax(root, _player, level, 0, -9999, 9999);
+        System.out.println("Level: " + level);
+        abminimax(root, _player, 1, 0, -9999, 9999);
+        //System.out.println("bestNode: " + bestNode);
         Node nodeToPlay = bestNode;
         
         System.out.println("level on the begin: " + level);
         while (levelOverall <= 60 && !end) {
             abminimax(root, _player, level + 1, 0, -9999, 9999);
             if (!end) {
+                //System.out.println("bestNode i while: " + bestNode);
                 nodeToPlay = bestNode;
                 level++;
                 levelOverall++;
-            }
+            } //else {
+                //System.out.println("ENDING on "+(System.currentTimeMillis() - start));
+            //}
         }
         System.out.println("level on the end: " + level);
         System.out.println("levelOverall: "+levelOverall);
         root = nodeToPlay;
         level--;
+        System.out.println("ME CUT!");
 
-        while (root.moves.isEmpty()  && !root.children.isEmpty()) {
+        System.out.println("ROOT: "+root);
+        if (root.moves.isEmpty() && !root.children.isEmpty()) {
             root = root.children.get(0);
             level--;
+            System.out.println("ME CUT!");
         }
 
         _board.makeMove(_player, nodeToPlay.move);
@@ -254,17 +274,21 @@ public class MyReversiPlayer extends ReversiPlayer {
 
         _board.makeMove(_player.opponent(), position);
 
+        System.out.println("ENEMY: moves "+root.moves.size());
+        System.out.println("ENEMY: children "+root.children.size());
         for (Node children : root.children) {
             if (equals(children.move, position)) {
                 root = children;
                 level--;
+                System.out.println("ENEMY CUT!");
                 break;
             }
         }
 
-        while (root.moves.isEmpty() && !root.children.isEmpty()) {
+        if (root.moves.isEmpty() && !root.children.isEmpty()) {
             root = root.children.get(0);
             level--;
+            System.out.println("ENEMY CUT!");
         }
     }
 
