@@ -9,7 +9,7 @@ public class MyReversiPlayer extends ReversiPlayer {
 
     private Player _player;
     private Board _board;
-    private Log log;
+    //private Log log;
     private long timeout;
     private static final double TIMEOUT_COEF = 0.9;
     private long start;
@@ -80,10 +80,18 @@ public class MyReversiPlayer extends ReversiPlayer {
     private static boolean equals(Position first, Position second) {
         return (first.getX() == second.getX() && first.getY() == second.getY());
     }
+    
+    private boolean isTimeRanOut(){
+        if(System.currentTimeMillis() - start > timeout){
+            System.out.println("ENDE!");
+            end = true;
+            return true;
+        }
+        return false;
+    }
 
     private int abminimax(Node node, Player player, int maxDepth, int currDepth, Integer alpha, Integer beta) {
-        if (System.currentTimeMillis() - start > timeout || maxDepth == currDepth) {
-            end = true;
+        if (isTimeRanOut() || maxDepth == currDepth) {
             if (node.value == -9999) {
                 node.value = calculateNodeValue(node, player, _player);
             }
@@ -116,20 +124,21 @@ public class MyReversiPlayer extends ReversiPlayer {
 //                beta = Math.min(beta, bestValue);
 //            }
         } else {
-            while (node.expanding < node.moves.size() && !end) {
+            for (int i = 0; i < node.moves.size() && !end; i++) {
+                //System.out.println("moves: " + node.moves.size());
+                //System.out.println("expanding: " + node.expanding);
                 Node child;
-                if (node.expanding >= node.children.size()) {
+                if (i >= node.expanding) {
                     Board newBoard = node.board.clone();
                     Position newMove = node.moves.get(node.expanding);
                     newBoard.makeMove(player, newMove);
                     child = new Node(newBoard, newMove);
                     child.moves = child.board.legalMoves(player.opponent());
                     node.children.add(child);
-                    
+                    node.expanding++;
                 } else {
-                    child = node.children.get(node.expanding);
+                    child = node.children.get(i);
                 }
-                node.expanding++;
                 
                 int value = abminimax(child, player.opponent(), maxDepth, currDepth + 1, alpha, beta);
 
@@ -159,11 +168,13 @@ public class MyReversiPlayer extends ReversiPlayer {
 
     @Override
     public void init(Player player) {
+        
+        start = System.currentTimeMillis();
 
         _player = player;
         _board = new Board();
 
-        log = new Log("reversi" + System.currentTimeMillis() + ".log");
+        //log = new Log("reversi" + System.currentTimeMillis() + ".log");
 
         try {
             FileReader configFile = new FileReader("src/student/config.properties");
@@ -186,6 +197,7 @@ public class MyReversiPlayer extends ReversiPlayer {
         root.moves = _board.legalMoves(Player.BLACK);
         abminimax(root, Player.BLACK, 1, 0, -9999, 9999);
         end = false;
+        level = 1;
     }
 
     @Override
@@ -194,18 +206,19 @@ public class MyReversiPlayer extends ReversiPlayer {
         start = System.currentTimeMillis();
         end = false;
 
-        bestNode = root.children.get(0);
-        Position move = bestNode.move;
+        bestNode = null;
+        Position move = null;
 
         while (level < 60) {
             abminimax(root, _player, level, 0, -9999, 9999);
             if (!end) {
                 move = bestNode.move;
                 level++;
+            } else{
+                break;
             }
-            if (end) break;
         }
-
+        System.out.println("level: " + level);
         root = bestNode;
 
         while (root.move == null) {
