@@ -13,15 +13,9 @@ public class MyReversiPlayer extends ReversiPlayer {
     private long timeout;
     private static final double TIMEOUT_COEF = 0.9;
     private long start;
-    private LinkedList<Node> legalMoves = new LinkedList<>();
-    private LinkedList<Node> lastCompleteLevel = new LinkedList<>();
+    private Node root;
     private int level;
-    private int lastCompleteLevelDepth;
-    private int lastExpandedNode;
-    private int nextExpandingChildren;
-    private LinkedList<Node> currentLevel = new LinkedList<>();
-    private boolean isMinimaxInterrupted;
-    private Player currPlayer;
+    private Node bestNode;
     private boolean end;
     private static int [][] fieldValues = new int[][]{{ 99, -8, 8, 6, 6, 8, -8,99},
                                                       { -8,-24,-4,-3,-3,-4,-24,-8},
@@ -38,6 +32,7 @@ public class MyReversiPlayer extends ReversiPlayer {
         int value;
         LinkedList<Node> children;
         List<Position> moves;
+        int expanding;
         Position move;
 
         public Node(Board board, Position move) {
@@ -48,21 +43,26 @@ public class MyReversiPlayer extends ReversiPlayer {
         }
     }
          
-    private static int calculateBoardValue(Board board, Player player) {
+    private static int calculateNodeValue(Node node, Player nextPlayer, Player me) {
         int value = 0;
         for (int i = 0; i < 8; ++i) {
             for (int j = 0; j < 8; ++j) {
                 try {
-                    Field f = board.getField(new Position(i, j));
-                    if (equals(f, player)) {
+                    Field f = node.board.getField(new Position(i, j));
+                    if (equals(f, nextPlayer)) {
                         value+=fieldValues[i][j];
-                    } else if (equals(f, player.opponent())) {
+                    } else if (equals(f, nextPlayer.opponent())) {
                         value-=fieldValues[i][j];
                     }
                 } catch (InvalidPositionException ex) {
                     System.out.println(ex);
                 }
             }
+        }
+        if(nextPlayer == me){
+            value *= (0.5 + 0.075 * (node.moves.size()-1));
+        } else {
+            value *= (2 - 0.075 * (node.moves.size()-1));
         }
         return value;
     }
@@ -80,218 +80,87 @@ public class MyReversiPlayer extends ReversiPlayer {
         return (first.getX() == second.getX() && first.getY() == second.getY());
     }
     
-    private void expand() {
-        log.println("-------------------EXPAND------------------");
-        log.println("lastLevel before expanding: "+lastCompleteLevel.size());
-        log.println("lastExpandedNode: "+lastExpandedNode);
-        while ((lastExpandedNode < lastCompleteLevel.size()) && !end) {
-            log.println("Node time: "+(System.currentTimeMillis()-start)+" ms");
-            Node currNode = lastCompleteLevel.get(lastExpandedNode);
-            if (currNode.moves == null) {
-                currNode.moves  = currNode.board.legalMoves(currPlayer);
-            }
-            Board currBoard = currNode.board;
-            List<Position> currMoves = currNode.moves;
-            if (currNode.moves.isEmpty()) {
-                log.println("Child time: "+(System.currentTimeMillis()-start)+" ms");
-                if ((System.currentTimeMillis() - start) > timeout) {
-                    end = true;
-                    log.println("----------------ENDING ON " + (System.currentTimeMillis()-start) + " ms-----------------");
-                }
-                //log.println("Hit no posible moves to play...");
-                Board childrenBoard = currBoard.clone();
-                Node child = new Node(childrenBoard, null);
-                //child.moves = childrenBoard.legalMoves(currPlayer.opponent());
-                currNode.children.add(child);
-                currentLevel.add(child);
-                lastExpandedNode++;
-                
-            } else {
-                if(nextExpandingChildren != 0)
-                    log.println("nextExpandingChildren: " + nextExpandingChildren);
-                while ((nextExpandingChildren < currMoves.size()) && !end) {
-                    log.println("Child time: "+(System.currentTimeMillis()-start)+" ms");
-                    if ((System.currentTimeMillis() - start) > timeout) {
-                        end = true;
-                        log.println("----------------ENDING ON " + (System.currentTimeMillis()-start) + " ms-----------------");
-                        break;
+    private int abminimax(Node node, Player player, int maxDepth, int currDepth, int alpha, int beta){
+        if(System.currentTimeMillis() - start > timeout || maxDepth == currDepth){
+            if(node.value != 9999 || node.value != -9999)
+                node.value = calculateNodeValue(node, player, _player);
+            return node.value;
+        }
+        int bestValue;
+        if(player == _player){
+            bestValue = -9999;
+        } else {
+            bestValue = 9999;
+        }
+        if(node.moves.isEmpty()) {
+            Node child;
+            Board newBoard = node.board.clone();
+            child = new Node(newBoard, null);
+            child.moves = child.board.legalMoves(player.opponent());
+            node.children.add(child);
+            
+            int value = abminimax(child, player.opponent(), maxDepth, currDepth + 1, alpha, beta);
+
+            if(player == _player){
+                if(value > bestValue){
+                    bestValue = value;
+                    bestNode = child;
+                    if(bestValue > beta){
+                        return bestValue;
                     }
-                    Board childrenBoard = currBoard.clone();
-                    Position childrenMove = currMoves.get(nextExpandingChildren);
-                    childrenBoard.makeMove(currPlayer, childrenMove);
-                    Node child = new Node(childrenBoard, childrenMove);
-                    //child.moves = childrenBoard.legalMoves(currPlayer.opponent());
-                    log.println("Child before lists: "+(System.currentTimeMillis()-start)+" ms");
-                    currNode.children.add(child);
-                    currentLevel.add(child);
-                    nextExpandingChildren++;
-                    log.println("Child end time: "+(System.currentTimeMillis()-start)+" ms");
+                    alpha = Math.max(alpha, bestValue);
                 }
-                if (nextExpandingChildren == currMoves.size()) {
-                    nextExpandingChildren = 0;
-                    lastExpandedNode++;
+            } else {
+                if(value < bestValue){
+                    bestValue = value;
+                    bestNode = child;
+                    if(bestValue < alpha){
+                        return bestValue;
+                    }
+                    beta = Math.min(beta, bestValue);
+                }
+            }
+        } else {
+            while(node.expanding < node.moves.size()){
+                Node child;
+                if(node.expanding >= node.children.size()){
+                    Board newBoard = node.board.clone();
+                    Position newMove = node.moves.get(node.expanding);
+                    newBoard.makeMove(player, newMove);
+                    child = new Node(newBoard, newMove);
+                    child.moves = child.board.legalMoves(player.opponent());
+                    node.children.add(child);
+                    node.expanding++;
+                } else {
+                    child = node.children.get(node.expanding);
+                }
+                
+                int value = abminimax(child, player.opponent(), maxDepth, currDepth + 1, alpha, beta);
+
+                if(player == _player){
+                    if(value > bestValue){
+                        bestValue = value;
+                        bestNode = child;
+                        if(bestValue > beta){
+                            return bestValue;
+                        }
+                        alpha = Math.max(alpha, bestValue);
+                    }
+                } else {
+                    if(value < bestValue){
+                        bestValue = value;
+                        bestNode = child;
+                        if(bestValue < alpha){
+                            return bestValue;
+                        }
+                        beta = Math.min(beta, bestValue);
+                    }
                 }
             }
         }
-        if (lastExpandedNode == lastCompleteLevel.size()) {
-            lastExpandedNode = 0;
-            log.println("lastCompleteLevel expanding is finished!");
-        }
-        if (lastExpandedNode == 0 && nextExpandingChildren == 0) {
-            lastCompleteLevel = currentLevel;
-            lastCompleteLevelDepth++;
-            level++;
-            currentLevel = new LinkedList<>();
-            currPlayer = currPlayer.opponent();
-            log.println("COMPLETELEVEL BECOMES LASTCOMPLETELEVEL");
-        }
-        log.println("lastExpandedNode: "+lastExpandedNode);
-        log.println("nextExpandingChild: "+nextExpandingChildren);
-        log.println("--------------------EXPAND END-----------------");
+        return bestValue;
     }
 
-    private Position minimax() {
-        int moveValue;
-        int max = -9999;
-        Position bestMove = null;
-        Position move = null;
-        log.println("--------------------MINIMAX--------------------");
-        log.println("moves to choose from: " + legalMoves.size());
-        for (Node node : legalMoves) {
-            moveValue = calculateValue(_player.opponent(), node);
-            if (moveValue > max) {
-                max = moveValue;
-                bestMove = node.move;
-            }
-            if (end) {
-                break;
-            }
-        }
-        if (!end) {
-            move = bestMove;
-            isMinimaxInterrupted = false;
-        }
-        log.println("--------------------MINIMAX END-----------------");
-        return move;
-    }
-    
-    private int calculateValue(Player player, Node node) {
-        if (node.children.isEmpty()) {
-            if(node.value == -9999){
-                node.value = calculateBoardValue(node.board, _player);
-                if(node.moves == null){
-                    node.moves = node.board.legalMoves(currPlayer);
-                }
-                if(player == _player){
-                    node.value *= (0.5 + 0.075 * (node.moves.size()-1));
-                } else {
-                    node.value *= (2 - 0.075 * (node.moves.size()-1));
-                }
-            }
-//            if((System.currentTimeMillis() - start) > timeout){
-//                end = true;
-//                isMinimaxInterrupted = true;
-//                log.println("----------------ENDING ON " + (System.currentTimeMillis()-start) + " ms-----------------");
-//            }
-            return node.value;
-        } else {
-            int max = -9999;
-            int min = 9999;
-            int value;
-            for (Node children : node.children) {
-                if((System.currentTimeMillis() - start) > timeout){
-                    end = true;
-                    isMinimaxInterrupted = true;
-                    log.println("----------------ENDING ON " + (System.currentTimeMillis()-start) + " ms-----------------");
-                    break;
-                }
-                value = calculateValue(player.opponent(), children);
-                if (player == _player) {
-                    if (value > max) {
-                        max = value;
-                    }
-                } else {
-                    if (value < min) {
-                        min = value;
-                    }
-                }
-//                if (end) {
-//                    break;
-//                }
-            }
-            if (player == _player) {
-                return max;
-            } else {
-                return min;
-            }
-        }
-    }
-    
-    private void cut(Position move){
-        log.println("--------------------CUTTING--------------------");
-        log.println("LegalMoves before "+legalMoves.size());
-        log.println("lastCompleteLevel size before "+lastCompleteLevel.size());
-        log.println("currentLevel size before: " + currentLevel.size());
-        for (Node node : legalMoves) {
-            if ((move == null && node.move == null) || (equals(node.move, move))) {
-                legalMoves = node.children;
-                log.println("LegalMoves after "+legalMoves.size());
-                if(!legalMoves.isEmpty())
-                    lastCompleteLevelDepth--;
-                if (!legalMoves.isEmpty() && (lastCompleteLevelDepth > 0)) {
-                    Node firstCurr = legalMoves.getFirst().children.getFirst();
-                    Node lastCurr = legalMoves.getLast().children.getLast();
-                    int depth = lastCompleteLevelDepth - 1;
-                    while (depth != 0) {
-                        firstCurr = firstCurr.children.getFirst();
-                        lastCurr = lastCurr.children.getLast();
-                        depth--;
-                    }
-                    int first = lastCompleteLevel.indexOf(firstCurr);
-                    int last = lastCompleteLevel.indexOf(lastCurr);
-                    lastCompleteLevel = new LinkedList<>(lastCompleteLevel.subList(first, last + 1));
-                    log.println("lastCompleteLevel: first: " + first + " last: " + last);
-                    log.println("lastCompleteLevel: remaining after cut: " + lastCompleteLevel.size());
-                    if (first > lastExpandedNode) {
-                        lastExpandedNode = 0;
-                        nextExpandingChildren = 0;
-                        currentLevel = new LinkedList<>();
-                        log.println("currentLevel cleared!");
-                    } else if (last < lastExpandedNode) {
-                        lastExpandedNode = 0;
-                        nextExpandingChildren = 0;
-                        firstCurr = firstCurr.children.getFirst();
-                        lastCurr = lastCurr.children.getLast();
-                        first = currentLevel.indexOf(firstCurr);
-                        last = currentLevel.indexOf(lastCurr);
-                        currentLevel = new LinkedList<>(currentLevel.subList(first, last + 1));
-                        log.println("currentLevel: first: " + first + ", last: " + last);
-                        log.println("currentLevel: remaining nodes after cut: " + currentLevel.size());
-                        lastCompleteLevel = currentLevel;
-                        lastCompleteLevelDepth++;
-                        level++;
-                        currentLevel = new LinkedList<>();
-                        currPlayer = currPlayer.opponent();
-                    } else {
-                        lastExpandedNode-=first;
-                        log.println("lastExpandedNode modified to "+lastExpandedNode);
-                        if(currentLevel.size()>0){
-                            firstCurr = firstCurr.children.getFirst();
-                            first = currentLevel.indexOf(firstCurr);
-                            log.println("currentLevel: first: " + first + ", last/size-1: " + (currentLevel.size()-1));
-                            currentLevel = new LinkedList<>(currentLevel.subList(first, currentLevel.size()));
-                            log.println("currentLevel: remaining after cut: " + currentLevel.size());
-                        }
-                    }
-                    log.println("lastExpandedNode: " + lastExpandedNode);
-                    log.println("nextExpandingChildren: " + nextExpandingChildren);
-                    log.println("currentLevel size after: " + currentLevel.size());
-                    log.println("--------------------CUTTING END-----------------");
-                }
-            }
-        }
-    }
-    
     @Override
     public void init(Player player) {
 
@@ -325,23 +194,7 @@ public class MyReversiPlayer extends ReversiPlayer {
                 System.out.println("ERROR!!! Config file corupted.");
             }
         }
-        
-        List<Position> moves = _board.legalMoves(Player.BLACK);
-        for (Position currMove : moves) {
-            Board newBoard = _board.clone();
-            newBoard.makeMove(Player.BLACK, currMove);
-            Node n = new Node(newBoard, currMove);
-            //n.moves = n.board.legalMoves(Player.WHITE);
-            legalMoves.add(n);
-        }
-        lastCompleteLevel = legalMoves;
-        currPlayer = Player.WHITE;
-        level = 1;
-        lastCompleteLevelDepth = 0;
-        lastExpandedNode = 0;
-        nextExpandingChildren = 0;
-        currentLevel = new LinkedList<>();
-        isMinimaxInterrupted = false;
+        root = new Node(_board, null);
         end = false;
     }
 
@@ -351,59 +204,23 @@ public class MyReversiPlayer extends ReversiPlayer {
         start = System.currentTimeMillis();
         end = false;
         
-        Position move;
+        Position move = null;
 
-        log.println("--------------GET MOVE---------------");
-        log.println("legalMoves to chose from: " + legalMoves.size());
-        
-        if(legalMoves.isEmpty()){
-            List<Position> moves = _board.legalMoves(_player);
-            for (Position currMove : moves) {
-                Board newBoard = _board.clone();
-                newBoard.makeMove(_player, currMove);
-                Node n = new Node(newBoard, currMove);
-                //n.moves = n.board.legalMoves(_player.opponent());
-                legalMoves.add(n);
-            }
-            lastCompleteLevel = legalMoves;
-            currPlayer = _player.opponent();
-        }
-        int max = -9999;
-        Node maxNode = null;
-        for(Node node: legalMoves){
-            int value = node.value;
-            if(value > max){
-                max = value;
-                maxNode = node;
-            }
-        }
-        if(maxNode != null){
-            move = maxNode.move;
-        } else {
-            move = legalMoves.get(0).move;
+        for (int i = 0; i < 60; i++) {
+
+            abminimax(root, _player, i, 0, -9999, 9999);
+            if(bestNode != null)
+                move = bestNode.move;
         }
 
-        while (!end && level < 60) {
-            if(!isMinimaxInterrupted){
-                expand();
-            }
-            if (end) {
-                break;
-            }
-            Position tempMove = minimax();
-            if(tempMove != null)
-                move = tempMove;
-        }
+        root = bestNode;
 
-        cut(move);
-
-        while((legalMoves.size() == 1)&&(legalMoves.get(0).move == null)) {
-            cut(null);
+        while(root.move == null) {
+            root = root.children.get(0);
         }
         
         _board.makeMove(_player, move);
 
-        log.println("--------------GET MOVE END---------------");
         return move;
     }
     
@@ -411,13 +228,17 @@ public class MyReversiPlayer extends ReversiPlayer {
     public void opponentsMove(Position position) {
 
         _board.makeMove(_player.opponent(), position);
-        log.println("-------------OPPONENTS MOVE--------------");
-        log.println("moves to choose from: " + legalMoves.size());
-        cut(position);
-        while((legalMoves.size() == 1)&&(legalMoves.get(0).move == null)) {
-            cut(null);
+        
+        for(Node children: root.children){
+            if(equals(children.move, position)){
+                root = children;
+                break;
+            }
         }
-        log.println("-------------OPPONENTS MOVE END-----------");
+        
+        while(root.move == null) {
+            root = root.children.get(0);
+        }
     }
 
     public static void main(String[] args) {
