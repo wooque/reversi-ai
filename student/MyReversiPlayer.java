@@ -17,14 +17,14 @@ public class MyReversiPlayer extends ReversiPlayer {
     private int level;
     private Node bestNode;
     private boolean end;
-    private static int [][] fieldValues = new int[][]{{ 99, -8, 8, 6, 6, 8, -8,99},
-                                                      { -8,-24,-4,-3,-3,-4,-24,-8},
-                                                      {  8, -4, 7, 4, 4, 7, -4, 8},
-                                                      {  6, -3, 4, 0, 0, 4, -3, 6},
-                                                      {  6, -3, 4, 0, 0, 4, -3, 6},
-                                                      {  8, -4, 7, 4, 4, 7, -4, 8},
-                                                      { -8,-24,-4,-3,-3,-4,-24,-8},
-                                                      { 99, -8, 8, 6, 6, 8, -8,99}}; 
+    private static int[][] fieldValues = new int[][]{{99, -8, 8, 6, 6, 8, -8,99},
+                                                     {-8,-24,-4,-3,-3,-4,-24,-8},
+                                                     { 8, -4, 7, 4, 4, 7, -4, 8},
+                                                     { 6, -3, 4, 0, 0, 4, -3, 6},
+                                                     { 6, -3, 4, 0, 0, 4, -3, 6},
+                                                     { 8, -4, 7, 4, 4, 7, -4, 8},
+                                                     {-8,-24,-4,-3,-3,-4,-24,-8},
+                                                     {99, -8, 8, 6, 6, 8, -8,99}};
 
     private class Node {
 
@@ -42,7 +42,7 @@ public class MyReversiPlayer extends ReversiPlayer {
             children = new LinkedList<>();
         }
     }
-         
+
     private static int calculateNodeValue(Node node, Player nextPlayer, Player me) {
         int value = 0;
         for (int i = 0; i < 8; ++i) {
@@ -50,80 +50,82 @@ public class MyReversiPlayer extends ReversiPlayer {
                 try {
                     Field f = node.board.getField(new Position(i, j));
                     if (equals(f, nextPlayer)) {
-                        value+=fieldValues[i][j];
+                        value += fieldValues[i][j];
                     } else if (equals(f, nextPlayer.opponent())) {
-                        value-=fieldValues[i][j];
+                        value -= fieldValues[i][j];
                     }
                 } catch (InvalidPositionException ex) {
                     System.out.println(ex);
                 }
             }
         }
-        if(nextPlayer == me){
-            value *= (0.5 + 0.075 * (node.moves.size()-1));
+        if (nextPlayer == me) {
+            value *= (0.5 + 0.075 * (node.moves.size() - 1));
         } else {
-            value *= (2 - 0.075 * (node.moves.size()-1));
+            value *= (2 - 0.075 * (node.moves.size() - 1));
         }
         return value;
     }
-    
-    private static boolean equals(Field f, Player p){
-        if(f == Field.BLACK && p == Player.BLACK)
+
+    private static boolean equals(Field f, Player p) {
+        if (f == Field.BLACK && p == Player.BLACK) {
             return true;
-        else if(f == Field.WHITE && p == Player.WHITE)
+        } else if (f == Field.WHITE && p == Player.WHITE) {
             return true;
-        else
+        } else {
             return false;
+        }
     }
-    
-    private static boolean equals(Position first, Position second){
+
+    private static boolean equals(Position first, Position second) {
         return (first.getX() == second.getX() && first.getY() == second.getY());
     }
-    
-    private int abminimax(Node node, Player player, int maxDepth, int currDepth, int alpha, int beta){
-        if(System.currentTimeMillis() - start > timeout || maxDepth == currDepth){
-            if(node.value != 9999 || node.value != -9999)
+
+    private int abminimax(Node node, Player player, int maxDepth, int currDepth, int alpha, int beta) {
+        if (System.currentTimeMillis() - start > timeout || maxDepth == currDepth) {
+            if (node.value != 9999 || node.value != -9999) {
                 node.value = calculateNodeValue(node, player, _player);
+            }
             return node.value;
         }
         int bestValue;
-        if(player == _player){
+        if (player == _player) {
             bestValue = -9999;
         } else {
             bestValue = 9999;
         }
-        if(node.moves.isEmpty()) {
+        if (node.moves.isEmpty()) {
             Node child;
             Board newBoard = node.board.clone();
             child = new Node(newBoard, null);
             child.moves = child.board.legalMoves(player.opponent());
             node.children.add(child);
-            
+
             int value = abminimax(child, player.opponent(), maxDepth, currDepth + 1, alpha, beta);
 
-            if(player == _player){
-                if(value > bestValue){
+            if (player == _player) {
+                if (value > bestValue) {
                     bestValue = value;
                     bestNode = child;
-                    if(bestValue > beta){
+                    if (bestValue > beta) {
                         return bestValue;
                     }
                     alpha = Math.max(alpha, bestValue);
                 }
             } else {
-                if(value < bestValue){
+                if (value < bestValue) {
                     bestValue = value;
                     bestNode = child;
-                    if(bestValue < alpha){
+                    if (bestValue < alpha) {
                         return bestValue;
                     }
                     beta = Math.min(beta, bestValue);
                 }
             }
         } else {
-            while(node.expanding < node.moves.size()){
+            while (node.expanding < node.moves.size()) {
                 Node child;
-                if(node.expanding >= node.children.size()){
+                if (node.expanding >= node.children.size()) {
                     Board newBoard = node.board.clone();
                     Position newMove = node.moves.get(node.expanding);
                     newBoard.makeMove(player, newMove);
@@ -134,23 +136,23 @@ public class MyReversiPlayer extends ReversiPlayer {
                 } else {
                     child = node.children.get(node.expanding);
                 }
-                
+
                 int value = abminimax(child, player.opponent(), maxDepth, currDepth + 1, alpha, beta);
 
-                if(player == _player){
-                    if(value > bestValue){
+                if (player == _player) {
+                    if (value > bestValue) {
                         bestValue = value;
                         bestNode = child;
-                        if(bestValue > beta){
+                        if (bestValue > beta) {
                             return bestValue;
                         }
                         alpha = Math.max(alpha, bestValue);
                     }
                 } else {
-                    if(value < bestValue){
+                    if (value < bestValue) {
                         bestValue = value;
                         bestNode = child;
-                        if(bestValue < alpha){
+                        if (bestValue < alpha) {
                             return bestValue;
                         }
                         beta = Math.min(beta, bestValue);
@@ -167,34 +169,28 @@ public class MyReversiPlayer extends ReversiPlayer {
         _player = player;
         _board = new Board();
 
-        log = new Log("reversi"+System.currentTimeMillis()+".log");
+        log = new Log("reversi" + System.currentTimeMillis() + ".log");
 
-        FileReader configFile = null;
         try {
-            configFile = new FileReader("src/student/config.properties");
-        } catch (FileNotFoundException ex) {
-            System.out.println("ERROR!!! No config file.");
+            FileReader configFile = new FileReader("src/student/config.properties");
+            BufferedReader config = new BufferedReader(configFile);
+            StringTokenizer line = new StringTokenizer(config.readLine(), "=");
+            while (true) {
+                if (line.nextToken().equals("timeout")) {
+                    timeout = Integer.parseInt(line.nextToken());
+                    break;
+                }
+                line = new StringTokenizer(config.readLine(), "=");
+            }
+            timeout = (int) (timeout * TIMEOUT_COEF);
+            config.close();
+        } catch (IOException | NumberFormatException e) {
+            System.out.println("ERROR!!! Config file not found or corupted.");
         }
 
-        if (configFile != null) {
-            BufferedReader config = new BufferedReader(configFile);
-            StringTokenizer line;
-            try {
-                line = new StringTokenizer(config.readLine(), "=");
-                while (true) {
-                    if (line.nextToken().equals("timeout")) {
-                        timeout = Integer.parseInt(line.nextToken());
-                        break;
-                    }
-                    line = new StringTokenizer(config.readLine(), "=");
-                }
-                timeout = (int) (timeout * TIMEOUT_COEF);
-                config.close();
-            } catch (IOException ioe) {
-                System.out.println("ERROR!!! Config file corupted.");
-            }
-        }
         root = new Node(_board, null);
+        root.moves = _board.legalMoves(Player.BLACK);
+        abminimax(root, Player.BLACK, 1, 0, -9999, 9999);
         end = false;
     }
 
@@ -203,40 +199,43 @@ public class MyReversiPlayer extends ReversiPlayer {
 
         start = System.currentTimeMillis();
         end = false;
-        
-        Position move = null;
 
-        for (int i = 0; i < 60; i++) {
+        bestNode = root.children.get(0);
+        Position move = bestNode.move;
 
-            abminimax(root, _player, i, 0, -9999, 9999);
-            if(bestNode != null)
+        while (level < 60) {
+            abminimax(root, _player, level, 0, -9999, 9999);
+            if (bestNode != null) {
                 move = bestNode.move;
+                level++;
+            }
+            if (end) break;
         }
 
         root = bestNode;
 
-        while(root.move == null) {
+        while (root.move == null) {
             root = root.children.get(0);
         }
-        
+
         _board.makeMove(_player, move);
 
         return move;
     }
-    
+
     @Override
     public void opponentsMove(Position position) {
 
         _board.makeMove(_player.opponent(), position);
-        
-        for(Node children: root.children){
-            if(equals(children.move, position)){
+
+        for (Node children : root.children) {
+            if (equals(children.move, position)) {
                 root = children;
                 break;
             }
         }
-        
-        while(root.move == null) {
+
+        while (root.move == null) {
             root = root.children.get(0);
         }
     }
