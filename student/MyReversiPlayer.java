@@ -10,11 +10,12 @@ public class MyReversiPlayer extends ReversiPlayer {
     private Player _player;
     private Board _board;
     private long timeout;
-    private static final double TIMEOUT_COEF = 0.9;
+    private static final double TIMEOUT_COEF = 0.85;
     private long start;
     private Node root;
     private Node bestNode;
-    private int level;
+    //private int level;
+    private int rootlevel;
     private int levelOverall;
     private boolean end;
     private static int[][] fieldValues = new int[][]{{99, -8, 8, 6, 6, 8, -8,99},
@@ -32,7 +33,6 @@ public class MyReversiPlayer extends ReversiPlayer {
         int value;
         LinkedList<Node> children;
         List<Position> moves;
-        int expanding;
         Position move;
 
         public Node(Board board, Position move) {
@@ -45,18 +45,42 @@ public class MyReversiPlayer extends ReversiPlayer {
 
     private static int calculateNodeValue(Node node, Player nextPlayer, Player me) {
         int value = 0;
+        Field [][] fields = new Field[8][8];
         for (int i = 0; i < 8; ++i) {
             for (int j = 0; j < 8; ++j) {
                 try {
-                    Field f = node.board.getField(new Position(i, j));
-                    if (equals(f, me)) {
-                        value += fieldValues[i][j];
-                    } else if (equals(f, me.opponent())) {
-                        value -= fieldValues[i][j];
-                    }
+                    fields[i][j] = node.board.getField(new Position(i, j));
                 } catch (InvalidPositionException ex) {
                     System.out.println(ex);
+                }    
+            }
+        }
+        for (int i = 0; i < 8; ++i) {
+            for (int j = 0; j < 8; ++j) {
+                Field f = fields[i][j];
+                double coef = 1;
+                if(i != 0 && i != 7 && j != 0 && j != 7)
+                    if ((fields[i-1][j-1] == Field.EMPTY) ^ (fields[i+1][j+1] != Field.EMPTY)){
+                        coef -= 0.125;
+                    }
+                if (j != 0 && j != 7)
+                    if ((fields[i][j-1] == Field.EMPTY) ^ (fields[i][j+1] != Field.EMPTY)){
+                        coef -= 0.125;
+                    }
+                if (i != 0 && i != 7)
+                    if ((fields[i-1][j] == Field.EMPTY) ^ (fields[i-1][j] != Field.EMPTY)){
+                        coef -= 0.125;
+                    }
+                if(i != 0 && i != 7 && j != 0 && j != 7)
+                    if ((fields[i-1][j+1] == Field.EMPTY) ^ (fields[i+1][j-1] != Field.EMPTY)){
+                        coef -= 0.125;
+                    }
+                if (equals(f, me)) {
+                    value += fieldValues[i][j] * coef;
+                } else if (equals(f, me.opponent())) {
+                    value -= fieldValues[i][j] * coef;
                 }
+                fields[i][j] = f;
             }
         }
         if (nextPlayer == me) {
@@ -104,6 +128,7 @@ public class MyReversiPlayer extends ReversiPlayer {
     }
     
     private boolean isTimeRanOut(){
+        //System.out.println("TIME: "+(System.currentTimeMillis()-start));
         if(System.currentTimeMillis() - start > timeout){
             System.out.println("ENDING on "+(System.currentTimeMillis() - start));
             end = true;
@@ -112,15 +137,15 @@ public class MyReversiPlayer extends ReversiPlayer {
         return false;
     }
 
-    private int abminimax(Node node, Player player, int maxDepth, int currDepth, Integer alphaParam, Integer betaParam) {
+    private int abminimax(Node node, Player player, int maxDepth, int currDepth, int alphaParam, int betaParam) {
         if (isTimeRanOut()) {
             if(player == _player){
-                return -9999;
-            } else {
                 return 9999;
+            } else {
+                return -9999;
             }
         }
-        if (maxDepth == currDepth) {
+        if (maxDepth == currDepth || (node.moves.isEmpty() && node.board.legalMoves(player.opponent()).isEmpty())) {
             if (node.value == -9999) {
                 node.value = calculateNodeValue(node, player, _player);
             }
@@ -150,17 +175,16 @@ public class MyReversiPlayer extends ReversiPlayer {
         } else {
             for (int i = 0; i < node.moves.size() && !end; i++) {
                 Node child = null;
-                if (i > node.expanding){
+                if (i > node.children.size()){
                     System.out.println("FATAL!");
                 } else{
-                    if (i == node.expanding) {
+                    if (i == node.children.size()) {
                         Board newBoard = node.board.clone();
-                        Position newMove = node.moves.get(node.expanding);
+                        Position newMove = node.moves.get(i);
                         newBoard.makeMove(player, newMove);
                         child = new Node(newBoard, newMove);
                         child.moves = child.board.legalMoves(player.opponent());
                         node.children.add(child);
-                        node.expanding++;
                     } else {
                         child = node.children.get(i);
                     }
@@ -221,10 +245,11 @@ public class MyReversiPlayer extends ReversiPlayer {
         root.moves = _board.legalMoves(Player.BLACK);
         bestNode = null;
         end = false;
-        level = 0;
-        abminimax(root, Player.BLACK, level + 1, 0, -9999, 9999);
-        level++;
-        levelOverall=level;
+        //level = 0;
+        abminimax(root, Player.BLACK, 1, 0, -9999, 9999);
+        //level++;
+        rootlevel = 0;
+        levelOverall= 1;
     }
 
     @Override
@@ -234,34 +259,40 @@ public class MyReversiPlayer extends ReversiPlayer {
         end = false;
 
         bestNode = null;
-        System.out.println("Level: " + level);
+        //System.out.println("Level: " + level);
         abminimax(root, _player, 1, 0, -9999, 9999);
         //System.out.println("bestNode: " + bestNode);
         Node nodeToPlay = bestNode;
         
-        System.out.println("level on the begin: " + level);
-        while (levelOverall <= 60 && !end) {
-            abminimax(root, _player, level + 1, 0, -9999, 9999);
+        abminimax(root, _player, levelOverall - rootlevel, 0, -9999, 9999);
+        if (!end) {
+            nodeToPlay = bestNode;
+        }
+        
+        System.out.println("rootlevel: " + rootlevel);
+        System.out.println("levelOverall begin: "+levelOverall);
+        while (levelOverall <= 70 && !end) {
+            abminimax(root, _player, levelOverall - rootlevel + 1, 0, -9999, 9999);
             if (!end) {
                 //System.out.println("bestNode i while: " + bestNode);
                 nodeToPlay = bestNode;
-                level++;
                 levelOverall++;
-            } //else {
-                //System.out.println("ENDING on "+(System.currentTimeMillis() - start));
-            //}
+            } else {
+                System.out.println("LevelOverAll last: "+levelOverall);
+                System.out.println("ENDING: "+(System.currentTimeMillis() - start));
+            }
         }
-        System.out.println("level on the end: " + level);
-        System.out.println("levelOverall: "+levelOverall);
+        System.out.println("levelOverall end: "+levelOverall);
         root = nodeToPlay;
-        level--;
+        rootlevel++;
         System.out.println("ME CUT!");
+        System.out.println("rootLevel: "+rootlevel);
 
-        System.out.println("ROOT: "+root);
         if (root.moves.isEmpty() && !root.children.isEmpty()) {
             root = root.children.get(0);
-            level--;
+            rootlevel++;
             System.out.println("ME CUT!");
+            System.out.println("rootLevel: "+rootlevel);
         }
 
         _board.makeMove(_player, nodeToPlay.move);
@@ -274,21 +305,26 @@ public class MyReversiPlayer extends ReversiPlayer {
 
         _board.makeMove(_player.opponent(), position);
 
-        System.out.println("ENEMY: moves "+root.moves.size());
-        System.out.println("ENEMY: children "+root.children.size());
+        if(root.moves.size()-root.children.size()>0){
+            System.out.println("FATAL ERROR: m: "+ root.moves.size()+", s: "+root.children.size());
+            abminimax(root, _player.opponent(), 1, 0, -9999, 9999);
+            rootlevel++;
+        }
         for (Node children : root.children) {
             if (equals(children.move, position)) {
                 root = children;
-                level--;
+                rootlevel++;
                 System.out.println("ENEMY CUT!");
+                System.out.println("rootLevel "+rootlevel);
                 break;
             }
         }
 
         if (root.moves.isEmpty() && !root.children.isEmpty()) {
             root = root.children.get(0);
-            level--;
+            rootlevel++;
             System.out.println("ENEMY CUT!");
+            System.out.println("rootLevel "+rootlevel);
         }
     }
 
