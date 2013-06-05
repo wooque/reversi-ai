@@ -17,14 +17,14 @@ public class MyReversiPlayer extends ReversiPlayer {
     private int rootlevel;
     private int levelOverall;
     private boolean end;
-    private static int[][] fieldValues = new int[][]{{99, -8, 8, 6, 6, 8, -8,99},
-                                                     {-8,-24,-4,-3,-3,-4,-24,-8},
-                                                     { 8, -4, 7, 4, 4, 7, -4, 8},
-                                                     { 6, -3, 4, 0, 0, 4, -3, 6},
-                                                     { 6, -3, 4, 0, 0, 4, -3, 6},
-                                                     { 8, -4, 7, 4, 4, 7, -4, 8},
-                                                     {-8,-24,-4,-3,-3,-4,-24,-8},
-                                                     {99, -8, 8, 6, 6, 8, -8,99}};
+    private static int[][] fieldValues = new int[][]{{32, -8, 8, 8, 8, 8, -8,32},
+                                                     {-8,-16,-4,-4,-4,-4,-16,-8},
+                                                     { 8, -4, 8, 4, 4, 8, -4, 8},
+                                                     { 8, -4, 4, 0, 0, 4, -4, 8},
+                                                     { 8, -4, 4, 0, 0, 4, -4, 8},
+                                                     { 8, -4, 8, 4, 4, 8, -4, 8},
+                                                     {-8,-16,-4,-4,-4,-4,-16,-8},
+                                                     {32, -8, 8, 8, 8, 8, -8,32}};
 
     private class Node {
         
